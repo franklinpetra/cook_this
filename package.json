@@ -1,12 +1,12 @@
 {
   "name": "cook_this",
   "version": "0.1.0",
-  "homepage":"http://franklinpetra.github.io/cook_this",
+  "homepage": "http://franklinpetra.github.io/cook_this",
   "dependencies": {
     "@testing-library/jest-dom": "^4.2.4",
     "@testing-library/react": "^9.5.0",
     "@testing-library/user-event": "^7.2.1",
-    "franklinpetra/cook_this":"^0.1.0",
+    "franklinpetra/cook_this": "^0.1.0",
     "axios": "^0.19.2",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
@@ -18,7 +18,7 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "predeploy": "npm run build",
-    "deploy": "cook_this -d build"
+    "deploy": "gh-pages -d build"
   },
   "eslintConfig": {
     "extends": "react-app"
@@ -35,7 +35,10 @@
       "last 1 safari version"
     ]
   },
-  "publishConfig": { 
-    "registry": "https://npm.pkg.github.com/" 
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com/"
+  },
+  "devDependencies": {
+    "gh-pages": "^3.1.0"
   }
 }
