@@ -159,8 +159,8 @@ h1 {
   background-color: #d3d3d3;
   padding: 2rem;
   position: relative;
-/*   border-radius: 0.5rem;
-  box-shadow: 2rem 3rem 5rem #aaa; */
+/*   border-radius: 0.5rem; */
+  box-shadow: 2rem 3rem 5rem #aaa;
   border-radius:650px 850px 150px 650px /
                 350px 150px 950px 350px;
   animation: wobble 1s ease-in-out alternate infinite;
