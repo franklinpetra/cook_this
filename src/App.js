@@ -50,7 +50,7 @@ const App=() =>{
           <input
             type="text"
             value={query}
-            placeholder ="If you give me some ingredients, I'll see what recipes I can find." 
+            placeholder ="I like to wiggle but I work like any other search bar. List some ingredients and I'll see what recipes I can find for you." 
             autoComplete="off" 
             onChange={onChange}  
           />
