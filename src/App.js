@@ -24,7 +24,7 @@ const App=() =>{
     if (query !== "") {
       const result = await Axios.get(url);
       if (!result.data.more) {
-        return setAlert("can't find a food with that ingredient or one with that name");
+        return setAlert("We can't find a recipe with that ingredient.");
       }
       console.log(result);
       setRecipes(result.data.hits);
@@ -44,13 +44,13 @@ const App=() =>{
   return (
     <div>
       <div className="App">
-        <h1>Ingredient Searching App</h1>
+        <h1>Search for recipes by starting with a couple ingredients from your fridge or pantry.</h1>
         <form className="search-form" onSubmit={onSubmit}>
         {alert !== "" && <Alert alert={alert} />}
           <input
             type="text"
             value={query}
-            placeholder ="Search via ingredients or a recipe name" 
+            placeholder ="If you give me some ingredients, I'll see what recipes I can find." 
             autoComplete="off" 
             onChange={onChange}  
           />
