@@ -1,0 +1,652 @@
+:root {
+  --cream: #fff6e9;
+  --paper: #fffdf8;
+  --ink: #2a2320;
+  --muted: #7a6a60;
+  --tomato: #e8513a;
+  --tomato-dark: #c23c27;
+  --basil: #3f8f4f;
+  --basil-tint: #e4f3e2;
+  --butter: #ffd166;
+  --line: #e9dccb;
+  --chip-colors: #ffe1d6, #e4f3e2, #fff0c2, #e3ecff, #f6e1ff;
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+}
+
+body {
+  background:
+    radial-gradient(1200px 400px at 50% -120px, #ffe5c4 0%, transparent 70%),
+    var(--cream);
+  color: var(--ink);
+  font-family: "Nunito", system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.page {
+  width: 100%;
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 40px 16px 24px;
+  flex: 1;
+}
+
+/* Masthead ------------------------------------------------------------- */
+
+.masthead {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.title {
+  font-family: "Fredoka", sans-serif;
+  font-weight: 700;
+  font-size: clamp(2.6rem, 9vw, 4.5rem);
+  line-height: 1;
+  margin: 0 0 10px;
+  color: var(--tomato);
+  letter-spacing: -0.01em;
+  filter: url(#wriggle-soft);
+}
+
+.pot {
+  display: inline-block;
+  animation: bob 2.4s ease-in-out infinite;
+}
+
+@keyframes bob {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-4deg);
+  }
+  50% {
+    transform: translateY(-6px) rotate(4deg);
+  }
+}
+
+.lede {
+  margin: 0 auto;
+  max-width: 34rem;
+  font-size: 1.1rem;
+  color: var(--muted);
+}
+
+/* The wriggly pantry box ------------------------------------------------- */
+
+.pantry {
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+.wriggle-box {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-height: 72px;
+  padding: 14px 18px;
+}
+
+.wriggle-edge {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.wriggle-edge rect {
+  fill: var(--paper);
+  stroke: var(--ink);
+  stroke-width: 3;
+  filter: url(#wriggle);
+  transition: stroke 0.2s;
+}
+
+.wriggle-box:focus-within .wriggle-edge rect {
+  stroke: var(--tomato);
+  stroke-width: 3.5;
+}
+
+.wriggle-box > :not(.wriggle-edge, .suggestions) {
+  position: relative;
+  z-index: 1;
+}
+
+.chips {
+  display: contents;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px 4px 12px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  border: 2px solid var(--ink);
+  animation: pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  position: relative;
+  z-index: 1;
+}
+
+.chip:nth-child(5n + 1) { background: #ffe1d6; }
+.chip:nth-child(5n + 2) { background: #e4f3e2; }
+.chip:nth-child(5n + 3) { background: #fff0c2; }
+.chip:nth-child(5n + 4) { background: #e3ecff; }
+.chip:nth-child(5n + 5) { background: #f6e1ff; }
+
+.chip button {
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 1.1rem;
+  line-height: 1;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  cursor: pointer;
+  color: var(--ink);
+}
+
+.chip button:hover,
+.chip button:focus-visible {
+  background: rgb(0 0 0 / 0.08);
+  outline: none;
+}
+
+@keyframes pop {
+  from {
+    transform: scale(0.4) rotate(-8deg);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+#ingredient {
+  flex: 1 1 12rem;
+  min-width: 10rem;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 1.1rem;
+  padding: 8px 4px;
+  color: var(--ink);
+  outline: none;
+}
+
+#ingredient::placeholder {
+  color: #a8978b;
+}
+
+.suggestions {
+  position: absolute;
+  z-index: 5 !important;
+  left: 12px;
+  right: 12px;
+  top: calc(100% + 6px);
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 18px;
+  box-shadow: 0 10px 30px rgb(42 35 32 / 0.12);
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.suggestions li {
+  padding: 8px 12px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.suggestions li[aria-selected="true"],
+.suggestions li:hover {
+  background: var(--basil-tint);
+}
+
+.suggestions mark {
+  background: none;
+  color: var(--tomato-dark);
+  font-weight: 800;
+}
+
+.try {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+  margin: 16px 0 10px;
+}
+
+.try-label {
+  color: var(--muted);
+  font-weight: 700;
+  margin-right: 2px;
+}
+
+.try button {
+  border: 1.5px dashed #c9b8a6;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding: 3px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: transform 0.15s, background 0.15s;
+}
+
+.try button:hover,
+.try button:focus-visible {
+  background: var(--paper);
+  border-color: var(--tomato);
+  transform: rotate(-3deg) scale(1.05);
+  outline: none;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+}
+
+.basics {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  font-weight: 600;
+  cursor: pointer;
+  flex: 1 1 18rem;
+}
+
+.basics input {
+  width: 20px;
+  height: 20px;
+  margin-top: 2px;
+  accent-color: var(--basil);
+}
+
+.basics .muted {
+  font-weight: 400;
+}
+
+.cook {
+  font-family: "Fredoka", sans-serif;
+  font-weight: 600;
+  font-size: 1.25rem;
+  color: #fff;
+  background: var(--tomato);
+  border: 3px solid var(--ink);
+  border-radius: 999px;
+  padding: 10px 28px;
+  cursor: pointer;
+  box-shadow: 0 4px 0 var(--ink);
+  transition: transform 0.12s, box-shadow 0.12s, background 0.15s;
+}
+
+.cook:hover {
+  background: var(--tomato-dark);
+  transform: translateY(-2px) rotate(-1.5deg);
+  box-shadow: 0 6px 0 var(--ink);
+}
+
+.cook:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 var(--ink);
+}
+
+.cook:focus-visible,
+button:focus-visible {
+  outline: 3px solid var(--butter);
+  outline-offset: 2px;
+}
+
+.cook:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+/* Results --------------------------------------------------------------- */
+
+.status {
+  text-align: center;
+  font-weight: 700;
+  color: var(--muted);
+  min-height: 1.5em;
+  margin: 28px 0 12px;
+}
+
+.status .stir {
+  display: inline-block;
+  animation: stir 0.8s linear infinite;
+}
+
+@keyframes stir {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.results {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 18px;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  border: 2px solid var(--ink);
+  border-radius: 22px;
+  background: var(--paper);
+  overflow: hidden;
+  cursor: pointer;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  animation: rise 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+  transition: transform 0.18s, box-shadow 0.18s;
+}
+
+.card:hover,
+.card:focus-visible {
+  transform: translateY(-4px) rotate(-0.6deg);
+  box-shadow: 0 8px 0 var(--ink);
+  outline: none;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.card img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  display: block;
+  border-bottom: 2px solid var(--ink);
+  background: #f1e6d8;
+}
+
+.card-body {
+  padding: 12px 14px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.card-title {
+  display: block;
+  font-family: "Fredoka", sans-serif;
+  font-weight: 600;
+  font-size: 1.15rem;
+  line-height: 1.2;
+  margin: 0;
+}
+
+.meta {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: auto;
+  padding-top: 4px;
+}
+
+.badge {
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 2px 10px;
+  border-radius: 999px;
+  border: 1.5px solid currentColor;
+}
+
+.badge.uses {
+  color: var(--basil);
+  background: var(--basil-tint);
+}
+
+.badge.need {
+  color: #9a5a00;
+  background: #fff3d6;
+}
+
+.badge.ready {
+  color: #fff;
+  background: var(--basil);
+  border-color: var(--basil);
+}
+
+.empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 24px;
+  color: var(--muted);
+}
+
+/* Recipe dialog --------------------------------------------------------- */
+
+.recipe {
+  width: min(720px, calc(100vw - 24px));
+  max-height: calc(100vh - 32px);
+  border: 3px solid var(--ink);
+  border-radius: 26px;
+  padding: 0;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 12px 0 var(--ink);
+}
+
+.recipe::backdrop {
+  background: rgb(42 35 32 / 0.45);
+}
+
+.recipe[open] {
+  animation: rise 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.recipe-hero {
+  position: relative;
+}
+
+.recipe-hero img {
+  width: 100%;
+  max-height: 280px;
+  object-fit: cover;
+  display: block;
+  border-bottom: 3px solid var(--ink);
+}
+
+.close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  font-size: 1.3rem;
+  cursor: pointer;
+}
+
+.recipe-body {
+  padding: 18px 22px 24px;
+}
+
+.recipe h2 {
+  font-family: "Fredoka", sans-serif;
+  font-weight: 700;
+  font-size: 1.8rem;
+  line-height: 1.15;
+  margin: 0 0 4px;
+}
+
+.recipe h3 {
+  font-family: "Fredoka", sans-serif;
+  font-weight: 600;
+  font-size: 1.2rem;
+  margin: 20px 0 8px;
+}
+
+.ingredients {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 6px 16px;
+}
+
+.ingredients li {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+}
+
+.ingredients .mark {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: inline-grid;
+  place-items: center;
+  font-size: 0.75rem;
+  font-weight: 800;
+  border: 2px solid var(--ink);
+  transform: translateY(3px);
+}
+
+.ingredients .have .mark {
+  background: var(--basil);
+  border-color: var(--basil);
+  color: #fff;
+}
+
+.ingredients .staple .mark {
+  background: #f1e6d8;
+  border-color: #c9b8a6;
+}
+
+.ingredients .need .mark {
+  background: #fff3d6;
+  border-color: #d39a3a;
+}
+
+.ingredients .measure {
+  color: var(--muted);
+}
+
+.steps {
+  margin: 0;
+  padding-left: 1.4rem;
+}
+
+.steps li {
+  margin-bottom: 10px;
+  padding-left: 4px;
+}
+
+.steps li::marker {
+  font-family: "Fredoka", sans-serif;
+  font-weight: 700;
+  color: var(--tomato);
+}
+
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.links a {
+  font-weight: 700;
+  color: var(--ink);
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  padding: 6px 16px;
+  text-decoration: none;
+}
+
+.links a:hover {
+  background: var(--butter);
+}
+
+.footer {
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--muted);
+  padding: 24px 16px 32px;
+}
+
+.footer a {
+  color: var(--tomato-dark);
+  font-weight: 700;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
