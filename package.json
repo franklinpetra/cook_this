@@ -1,0 +1,7 @@
+{
+  "name": "cook-this",
+  "private": true,
+  "type": "module",
+  "description": "Pantry in, recipes out. Static site plus one serverless function for photo scanning.",
+  "engines": { "node": ">=20" }
+}

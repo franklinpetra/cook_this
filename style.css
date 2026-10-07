@@ -789,20 +789,15 @@ a:focus-visible {
   color: var(--muted);
 }
 
-.progress {
-  height: 4px;
-  border-radius: 999px;
-  background: var(--accent-tint);
-  overflow: hidden;
-  margin-bottom: 8px;
+/* While the photo is being read, the thumbnail breathes. */
+.scan.busy img {
+  animation: breathe 1.4s ease-in-out infinite;
 }
 
-.progress span {
-  display: block;
-  height: 100%;
-  width: 0;
-  background: var(--accent);
-  transition: width 0.3s;
+@keyframes breathe {
+  50% {
+    opacity: 0.55;
+  }
 }
 
 .found {
