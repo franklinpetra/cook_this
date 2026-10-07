@@ -7,7 +7,7 @@
 ## Using it
 
 1. **Add what you have.** Type a few ingredients (chicken, rice, lemon…) and pick from the suggestions, or tap one of the "Try" ideas.
-2. **Or snap a photo.** Tap **Photo** in the box, or **Snap a photo** just below it, then take or choose a picture of your fridge, pantry, or cupboard. Cook This lists the food it spots; untick anything it got wrong and tap **Add these**.
+2. **Or snap a photo.** Tap **Photo** in the box, or **Snap a photo** just below it, then take or choose a picture of your fridge, pantry, or cupboard. Cook This lists the food it spots; untick anything it got wrong and tap **Add these**. Multiple photos used one by one can be used to truly get your kitchens inventory in the search.
 3. **Tap Find recipes.** Recipes are ranked by how close you are to cooking them: how many of your ingredients each one uses, and how few you'd need to buy.
 4. **Open a recipe** to see what you have (✓), the basics you have (•), and what you'd need (+), with numbered steps and a video when there is one.
 
