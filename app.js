@@ -5,6 +5,7 @@ const API = "https://www.themealdb.com/api/json/v1/1";
 const SAMPLES = ["Chicken", "Rice", "Garlic", "Eggs", "Tomatoes", "Pasta", "Lemon", "Cheese"];
 const DETAILS_TO_FETCH = 16;
 const STORE_KEY = "cook-this-pantry";
+const MAX_PANTRY = 15;
 
 // Words that make an ingredient a different thing ("Chicken Stock" isn't chicken).
 const NOT_THE_SAME = ["spring", "stock", "powder", "sauce", "paste", "oil", "juice", "extract", "seasoning", "cube", "gravy"];
@@ -35,7 +36,7 @@ const escapeHtml = (s) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&l
 function load() {
   try {
     const saved = JSON.parse(localStorage.getItem(STORE_KEY) || "[]");
-    return Array.isArray(saved) ? saved.filter((x) => typeof x === "string").slice(0, 12) : [];
+    return Array.isArray(saved) ? saved.filter((x) => typeof x === "string").slice(0, MAX_PANTRY) : [];
   } catch {
     return [];
   }
@@ -87,21 +88,38 @@ function renderSamples() {
     : "";
 }
 
+// TheMealDB uses British names; people (and the photo scanner) often use American ones.
+const SAME_AS = {
+  eggplant: "Aubergine", zucchini: "Courgettes", cilantro: "Coriander", scallions: "Spring Onions",
+  "green onions": "Spring Onions", "ground beef": "Minced Beef", "ground pork": "Minced Pork", shrimp: "Prawns",
+  arugula: "Rocket", "garbanzo beans": "Chickpeas", "powdered sugar": "Icing Sugar", "heavy cream": "Double Cream",
+  "all-purpose flour": "Plain Flour", "all purpose flour": "Plain Flour", "bell pepper": "Red Pepper",
+  "bell peppers": "Red Pepper", "baking soda": "Bicarbonate Of Soda", "romaine": "Lettuce",
+  "canned tomatoes": "Chopped Tomatoes", "chicken breasts": "Chicken Breast", "sweet potatoes": "Sweet Potatoes",
+};
+
 /** The best real ingredient name for what was typed, so searches use TheMealDB's own names. */
 function canonical(text) {
   const t = norm(text);
   if (!t) return null;
+  if (SAME_AS[t]) return SAME_AS[t];
   const exact = allIngredients.find((n) => norm(n) === t || singular(norm(n)) === singular(t));
   if (exact) return exact;
   const starts = allIngredients.find((n) => norm(n).startsWith(t));
   if (starts) return starts;
+  // "Baby Carrots" → "Carrots": the longest known name whose words are all in what was typed.
+  const typed = words(t).map(singular);
+  const inside = allIngredients
+    .filter((n) => words(n).map(singular).every((w) => typed.includes(w)))
+    .sort((a, b) => b.length - a.length)[0];
+  if (inside) return inside;
   return text.trim().replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 function add(text) {
   const name = canonical(text);
   if (!name) return;
-  if (!pantry.some((p) => norm(p) === norm(name)) && pantry.length < 12) {
+  if (!pantry.some((p) => norm(p) === norm(name)) && pantry.length < MAX_PANTRY) {
     pantry.push(name);
     save();
     renderChips();
@@ -303,6 +321,79 @@ function openRecipe(r) {
   dialog.showModal();
   dialog.scrollTop = 0;
 }
+
+// --- Ingredients from a photo -------------------------------------------------
+
+const scanEl = $("scan");
+const photoEl = $("photo");
+const foundEl = $("found");
+const PRIVACY = "Your photo goes to an AI service to spot ingredients and isn't stored.";
+
+function setScan(title, note = PRIVACY, actions = false) {
+  $("scan-title").textContent = title;
+  $("scan-note").textContent = note;
+  $("scan-actions").hidden = !actions;
+}
+
+async function scan(file) {
+  scanEl.hidden = false;
+  foundEl.innerHTML = "";
+  $("scan-add").hidden = true;
+  const img = $("scan-img");
+  if (img.src) URL.revokeObjectURL(img.src);
+  img.src = URL.createObjectURL(file);
+  setScan("Looking for ingredients…");
+  scanEl.classList.add("busy");
+  scanEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  try {
+    const { scanPhoto } = await import("./scan.js");
+    const found = (await scanPhoto(file)).map((f) => ({ ...f, name: canonical(f.name) }));
+    const seen = new Set(pantry.map(norm));
+    const fresh = found.filter((f) => !seen.has(norm(f.name)) && seen.add(norm(f.name)));
+    if (!fresh.length) {
+      setScan(
+        found.length ? "Everything I spotted is already on your list." : "I couldn't spot any ingredients in that one.",
+        found.length ? PRIVACY : "Try a closer, brighter photo of a shelf or the inside of your fridge, or type them in.",
+        true,
+      );
+      return;
+    }
+    foundEl.innerHTML = fresh
+      .map(
+        (f) =>
+          `<li><button type="button" class="found-item" aria-pressed="${f.sure}" data-name="${escapeHtml(f.name)}"><span class="tick" aria-hidden="true"></span>${escapeHtml(f.name)}</button></li>`,
+      )
+      .join("");
+    $("scan-add").hidden = false;
+    setScan("Here's what I spotted. Untick anything I got wrong.", PRIVACY, true);
+  } catch (err) {
+    setScan("I couldn't read that photo.", `${err.message} You can still type your ingredients in.`, true);
+  } finally {
+    scanEl.classList.remove("busy");
+  }
+}
+
+function closeScan() {
+  scanEl.hidden = true;
+  foundEl.innerHTML = "";
+  input.focus();
+}
+
+$("scan-btn").addEventListener("click", () => photoEl.click());
+photoEl.addEventListener("change", () => {
+  const file = photoEl.files?.[0];
+  photoEl.value = "";
+  if (file) scan(file);
+});
+foundEl.addEventListener("click", (e) => {
+  const b = e.target.closest(".found-item");
+  if (b) b.setAttribute("aria-pressed", String(b.getAttribute("aria-pressed") !== "true"));
+});
+$("scan-add").addEventListener("click", () => {
+  for (const b of foundEl.querySelectorAll('.found-item[aria-pressed="true"]')) add(b.dataset.name);
+  closeScan();
+});
+$("scan-cancel").addEventListener("click", closeScan);
 
 // --- Wiring ------------------------------------------------------------------
 

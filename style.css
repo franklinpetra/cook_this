@@ -720,3 +720,172 @@ a:focus-visible {
 .steps li.sub::before {
   content: none;
 }
+
+/* Find ingredients in a photo ----------------------------------------- */
+
+.scan-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--accent-deep);
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 500;
+  padding: 8px 14px 8px 11px;
+  border-radius: 999px;
+  cursor: pointer;
+  margin-left: auto;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.scan-btn:hover {
+  border-color: var(--accent);
+  background: var(--accent-tint);
+}
+
+.scan {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+  margin-top: 14px;
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  box-shadow: var(--shadow);
+  animation: fade-up 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.scan[hidden] {
+  display: none;
+}
+
+.scan img {
+  flex: none;
+  width: 112px;
+  height: 112px;
+  object-fit: cover;
+  border-radius: 12px;
+  background: var(--line);
+}
+
+.scan-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.scan-title {
+  margin: 2px 0 2px;
+  font-family: var(--serif);
+  font-size: 1.15rem;
+  line-height: 1.3;
+}
+
+.scan-note {
+  margin: 0 0 10px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+/* While the photo is being read, the thumbnail breathes. */
+.scan.busy img {
+  animation: breathe 1.4s ease-in-out infinite;
+}
+
+@keyframes breathe {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+.found {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.found-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font: inherit;
+  font-size: 0.9rem;
+  padding: 5px 13px 5px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  text-decoration: line-through;
+  text-decoration-color: rgb(108 134 145 / 0.5);
+}
+
+.found-item .tick {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1.5px solid var(--line-strong);
+}
+
+.found-item[aria-pressed="true"] {
+  color: var(--accent-deep);
+  background: var(--accent-tint);
+  border-color: transparent;
+  text-decoration: none;
+}
+
+.found-item[aria-pressed="true"] .tick {
+  border-color: var(--accent);
+  background: var(--accent) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 8.5l2.5 2.5L12 5.5' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 12px no-repeat;
+}
+
+.scan-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.scan-actions[hidden] {
+  display: none;
+}
+
+.cook.small {
+  font-size: 0.92rem;
+  padding: 9px 20px;
+}
+
+.ghost {
+  font: inherit;
+  font-size: 0.92rem;
+  color: var(--ink-soft);
+  background: transparent;
+  border: 0;
+  padding: 9px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.ghost:hover {
+  color: var(--accent);
+}
+
+@media (max-width: 560px) {
+  .scan-label {
+    display: none;
+  }
+  .scan-btn {
+    padding: 9px;
+  }
+  .scan {
+    flex-direction: column;
+  }
+  .scan img {
+    width: 100%;
+    height: 160px;
+  }
+}

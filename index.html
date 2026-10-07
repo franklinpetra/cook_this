@@ -34,8 +34,26 @@
             placeholder="Add an ingredient — chicken, rice, lemon…"
             enterkeyhint="enter"
           />
+          <button type="button" class="scan-btn" id="scan-btn" aria-label="Find ingredients in a photo" title="Find ingredients in a photo">
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h1.3l1.4-2h5.6l1.4 2h1.3A2.5 2.5 0 0 1 20 8.5v8A2.5 2.5 0 0 1 17.5 19h-11A2.5 2.5 0 0 1 4 16.5z"/><circle cx="12" cy="12.5" r="3.4"/></svg>
+            <span class="scan-label">Photo</span>
+          </button>
+          <input type="file" id="photo" accept="image/*" hidden />
           <ul id="suggestions" class="suggestions" role="listbox" hidden></ul>
         </div>
+
+        <section id="scan" class="scan" aria-live="polite" hidden>
+          <img id="scan-img" alt="Your photo" />
+          <div class="scan-body">
+            <p class="scan-title" id="scan-title">Looking at your photo…</p>
+            <p class="scan-note" id="scan-note"></p>
+            <ul class="found" id="found" aria-label="Ingredients spotted in your photo"></ul>
+            <div class="scan-actions" id="scan-actions" hidden>
+              <button type="button" class="cook small" id="scan-add">Add these</button>
+              <button type="button" class="ghost" id="scan-cancel">Close</button>
+            </div>
+          </div>
+        </section>
 
         <div class="try" id="try">
           <span class="try-label">Try:</span>
@@ -57,7 +75,7 @@
     <dialog id="recipe" class="recipe" aria-labelledby="recipe-title"></dialog>
 
     <footer class="footer">
-      Recipes from <a href="https://www.themealdb.com" target="_blank" rel="noopener">TheMealDB</a>. Only ingredient names are sent to TheMealDB.
+      Photos are sent to an AI service to identify ingredients and are not stored. That list of ingredients is matched with recipes from <a href="https://www.themealdb.com" target="_blank" rel="noopener">TheMealDB</a>.
     </footer>
 
     <script src="app.js" type="module"></script>
