@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Cook This</title>
     <meta name="description" content="Tell it what's in your pantry and it finds recipes you can make with it." />
-    <meta name="theme-color" content="#f7f3ec" />
+    <meta name="theme-color" content="#eef5f6" />
     <link rel="icon" href="icons/favicon.ico" />
     <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -16,9 +16,8 @@
   <body>
     <main class="page">
       <header class="masthead">
-        <p class="eyebrow">A pantry-first recipe finder</p>
         <h1 class="title">Cook This</h1>
-        <p class="lede">Tell me what's in your kitchen, and I'll find something good to make with it.</p>
+        <p class="lede">Tell me what's in your kitchen, and I'll find something delicious to make with it.</p>
       </header>
 
       <form id="pantry-form" class="pantry" autocomplete="off">
@@ -35,8 +34,27 @@
             placeholder="Add an ingredient — chicken, rice, lemon…"
             enterkeyhint="enter"
           />
+          <button type="button" class="scan-btn" id="scan-btn" aria-label="Find ingredients in a photo" title="Find ingredients in a photo">
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h1.3l1.4-2h5.6l1.4 2h1.3A2.5 2.5 0 0 1 20 8.5v8A2.5 2.5 0 0 1 17.5 19h-11A2.5 2.5 0 0 1 4 16.5z"/><circle cx="12" cy="12.5" r="3.4"/></svg>
+            <span class="scan-label">Photo</span>
+          </button>
+          <input type="file" id="photo" accept="image/*" hidden />
           <ul id="suggestions" class="suggestions" role="listbox" hidden></ul>
         </div>
+
+        <section id="scan" class="scan" aria-live="polite" hidden>
+          <img id="scan-img" alt="Your photo" />
+          <div class="scan-body">
+            <p class="scan-title" id="scan-title">Looking at your photo…</p>
+            <p class="scan-note" id="scan-note">Your photo stays on this device.</p>
+            <div class="progress" id="scan-progress" hidden><span></span></div>
+            <ul class="found" id="found" aria-label="Ingredients spotted in your photo"></ul>
+            <div class="scan-actions" id="scan-actions" hidden>
+              <button type="button" class="cook small" id="scan-add">Add these</button>
+              <button type="button" class="ghost" id="scan-cancel">Cancel</button>
+            </div>
+          </div>
+        </section>
 
         <div class="try" id="try">
           <span class="try-label">Try:</span>
@@ -58,7 +76,7 @@
     <dialog id="recipe" class="recipe" aria-labelledby="recipe-title"></dialog>
 
     <footer class="footer">
-      Recipes from <a href="https://www.themealdb.com" target="_blank" rel="noopener">TheMealDB</a>. Only the ingredient names you add are sent to it.
+      Recipes from <a href="https://www.themealdb.com" target="_blank" rel="noopener">TheMealDB</a>. Only ingredient names are sent to TheMealDB.
     </footer>
 
     <script src="app.js" type="module"></script>

@@ -304,6 +304,104 @@ function openRecipe(r) {
   dialog.scrollTop = 0;
 }
 
+// --- Ingredients from a photo -------------------------------------------------
+
+const scanEl = $("scan");
+const photoEl = $("photo");
+const foundEl = $("found");
+const READY_KEY = "cook-this-scanner-ready";
+
+function scannerReady() {
+  try {
+    return localStorage.getItem(READY_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function setScan({ title, note, progress = null, actions = false }) {
+  $("scan-title").textContent = title;
+  if (note !== undefined) $("scan-note").textContent = note;
+  const bar = $("scan-progress");
+  bar.hidden = progress === null;
+  if (progress !== null) bar.firstElementChild.style.width = `${Math.round(progress * 100)}%`;
+  $("scan-actions").hidden = !actions;
+}
+
+async function scan(file) {
+  scanEl.hidden = false;
+  foundEl.innerHTML = "";
+  const img = $("scan-img");
+  if (img.src) URL.revokeObjectURL(img.src);
+  img.src = URL.createObjectURL(file);
+  const first = !scannerReady();
+  setScan({
+    title: first ? "Getting the photo scanner ready…" : "Looking for ingredients…",
+    note: first
+      ? "A one-time download of about 155 MB, then it works offline. Your photo stays on this device."
+      : "Your photo stays on this device.",
+    progress: first ? 0 : null,
+  });
+  scanEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  try {
+    const { scanPhoto, SURE } = await import("./scan.js");
+    const found = await scanPhoto(file, (stage, fraction) => {
+      if (stage === "download") setScan({ title: "Getting the photo scanner ready…", progress: fraction });
+      else setScan({ title: "Looking for ingredients…", note: "Your photo stays on this device. On a phone this can take a little while." });
+    });
+    try {
+      localStorage.setItem(READY_KEY, "1");
+    } catch {
+      // Without storage, the next visit just shows the download note again.
+    }
+    const fresh = found.filter((f) => !pantry.some((p) => norm(p) === norm(f.name)));
+    if (!fresh.length) {
+      setScan({
+        title: found.length ? "Everything I spotted is already on your list." : "I couldn't spot any ingredients in that one.",
+        note: found.length ? "Your photo stays on this device." : "Try a closer, brighter photo of a shelf, or type them in.",
+        actions: false,
+      });
+      $("scan-actions").hidden = false;
+      $("scan-add").hidden = true;
+      return;
+    }
+    $("scan-add").hidden = false;
+    foundEl.innerHTML = fresh
+      .map(
+        (f) =>
+          `<li><button type="button" class="found-item" aria-pressed="${f.score >= SURE}" data-name="${escapeHtml(f.name)}"><span class="tick" aria-hidden="true"></span>${escapeHtml(f.name)}</button></li>`,
+      )
+      .join("");
+    setScan({ title: "Here's what I spotted. Untick anything I got wrong.", note: "Your photo stays on this device.", actions: true });
+  } catch (err) {
+    console.error(err);
+    setScan({ title: "The photo scanner couldn't start on this device.", note: "You can still type your ingredients in.", actions: true });
+    $("scan-add").hidden = true;
+  }
+}
+
+function closeScan() {
+  scanEl.hidden = true;
+  foundEl.innerHTML = "";
+  input.focus();
+}
+
+$("scan-btn").addEventListener("click", () => photoEl.click());
+photoEl.addEventListener("change", () => {
+  const file = photoEl.files?.[0];
+  photoEl.value = "";
+  if (file) scan(file);
+});
+foundEl.addEventListener("click", (e) => {
+  const b = e.target.closest(".found-item");
+  if (b) b.setAttribute("aria-pressed", String(b.getAttribute("aria-pressed") !== "true"));
+});
+$("scan-add").addEventListener("click", () => {
+  for (const b of foundEl.querySelectorAll('.found-item[aria-pressed="true"]')) add(b.dataset.name);
+  closeScan();
+});
+$("scan-cancel").addEventListener("click", closeScan);
+
 // --- Wiring ------------------------------------------------------------------
 
 input.addEventListener("input", showSuggestions);
