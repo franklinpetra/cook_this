@@ -380,6 +380,7 @@ function closeScan() {
 }
 
 $("scan-btn").addEventListener("click", () => photoEl.click());
+$("photo-hint").addEventListener("click", () => photoEl.click());
 photoEl.addEventListener("change", () => {
   const file = photoEl.files?.[0];
   photoEl.value = "";

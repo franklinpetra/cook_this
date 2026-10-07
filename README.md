@@ -1,26 +1,53 @@
-# Cook This 🍲
+# Cook This
 
 **Tell it what's in your kitchen. It finds something delicious to make with it.**
 
-**Live:** [franklinpetra.github.io/cook_this](https://franklinpetra.github.io/cook_this/)
+**Live:** [cookthis.link](https://cookthis.link)
 
-- Add a few things you have (chicken, rice, lemon…). Suggestions appear as you type. Or tap **Photo** and snap your fridge, pantry, or cupboard; you tick what it got right.
-- Tap **Cook this!** and get recipes ranked by how close you are to cooking them: how many of your ingredients each one uses, and how few you'd need to buy.
-- Open a recipe to see what you have (✓), the basics you have (•), what you'd need (+), the steps, and a video when there is one.
-- Tick or untick "I have the basics" (salt, pepper, oil, butter, flour, sugar, water) to change what counts as missing.
+## Using it
 
-The design is editorial and calm: Fraunces headlines, Inter text, an ocean palette of sea mist, deep water, and teal, and motion that stays still for anyone who has reduced motion turned on.
+1. **Add what you have.** Type a few ingredients (chicken, rice, lemon…) and pick from the suggestions, or tap one of the "Try" ideas.
+2. **Or snap a photo.** Tap **Photo** in the box, or **Snap a photo** just below it, then take or choose a picture of your fridge, pantry, or cupboard. Cook This lists the food it spots; untick anything it got wrong and tap **Add these**.
+3. **Tap Find recipes.** Recipes are ranked by how close you are to cooking them: how many of your ingredients each one uses, and how few you'd need to buy.
+4. **Open a recipe** to see what you have (✓), the basics you have (•), and what you'd need (+), with numbered steps and a video when there is one.
+
+Untick "I have the basics" (salt, pepper, oil, butter, flour, sugar, water) to count those as missing too.
+
+## Privacy
+
+- **Photos** are shrunk in your browser, sent once to an AI vision service to identify ingredients, and never stored. Requests go only to providers that don't keep or train on data.
+- **Recipe searches** send only ingredient names to [TheMealDB](https://www.themealdb.com).
+- **Your ingredient list** is remembered in your own browser and nowhere else.
 
 ## How it works
 
-A plain HTML, CSS, and JavaScript site plus one small serverless function, hosted on Vercel.
+A plain HTML, CSS, and JavaScript site with no build step, plus one small serverless function, hosted on Vercel.
 
-- **Recipes** come from the free [TheMealDB](https://www.themealdb.com) API. Cook This looks up recipes for each of your ingredients (and close variants, so "Chicken" also finds "Chicken Thighs"), tallies the overlap, then loads the top matches to compare their ingredient lists with yours. American names like "zucchini" are translated to TheMealDB's ("Courgettes").
-- **Photo scanning** (`api/scan.js`): the photo is shrunk in the browser and sent once to a vision model (Gemini Flash) through OpenRouter, using only providers that don't store or train on data. Nothing is saved. Each visitor gets 15 scans a day, and the OpenRouter key has its own spending cap.
-- Your ingredient list is remembered in your own browser.
+- **Recipes** come from the free [TheMealDB](https://www.themealdb.com) API. Cook This looks up recipes for each ingredient (including close variants, so "Chicken" also finds "Chicken Thighs"), tallies the overlap, then loads the top matches to compare their ingredient lists with yours. American names are translated to TheMealDB's British ones, so "zucchini" finds recipes listed under "Courgettes".
+- **Photo scanning** (`api/scan.js`) sends the photo to a vision model (Gemini Flash) through [OpenRouter](https://openrouter.ai) and returns the ingredients it sees. To keep costs in check, each visitor gets 15 scans a day, each server instance has a daily ceiling, and the OpenRouter key has its own spending cap.
+- **Design:** Fraunces headlines, Inter text, an ocean palette of sea mist, deep water, and teal, and motion that holds still for anyone who has reduced motion turned on.
 
-## Run it locally
+| File | What it does |
+|---|---|
+| `index.html` | The page |
+| `style.css` | The look |
+| `app.js` | Ingredients, suggestions, recipe search, and the recipe view |
+| `scan.js` | Shrinks a photo in the browser and sends it to the scanner |
+| `api/scan.js` | The serverless function that asks the vision model what food it sees |
 
-Put an OpenRouter key in `.env.local` (see `.env.example`), then run `npx vercel dev` and open the address it prints.
+## Publishing
 
-Built by [Petra Franklin](https://github.com/franklinpetra).
+Every commit to the `master` branch publishes to cookthis.link automatically through Vercel, usually within a minute. Commits to other branches get their own preview address, so a change can be checked before it's merged. To undo a release, open the project's **Deployments** page on Vercel and promote an earlier version to production.
+
+The old address, franklinpetra.github.io/cook_this, redirects here.
+
+## Running it locally
+
+1. Copy `.env.example` to `.env.local` and add an OpenRouter API key. `.env.local` is ignored by git and never uploaded.
+2. Run `npx vercel dev` and open the address it prints.
+
+On Vercel, the same key is set as the `OPENROUTER_API_KEY` environment variable. Give that key a spending limit in OpenRouter.
+
+## Credits
+
+Recipe data and images: [TheMealDB](https://www.themealdb.com). Built by [Petra Franklin](https://github.com/franklinpetra).
