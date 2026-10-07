@@ -2,7 +2,7 @@
 
 **Tell it what's in your kitchen. It finds something delicious to make with it.**
 
-**Live:** [cookthis.link](https://cookthis.link)
+**Live:** https://cookthis.link or [cookthis.link](https://cookthis.link)
 
 ## Using it
 
