@@ -5,41 +5,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Cook This</title>
     <meta name="description" content="Tell it what's in your pantry and it finds recipes you can make with it." />
-    <meta name="theme-color" content="#fff6e9" />
+    <meta name="theme-color" content="#f7f3ec" />
     <link rel="icon" href="icons/favicon.ico" />
     <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <!-- The wriggle: a hand-drawn "line boil". Fresh noise every few frames makes the edges squirm. -->
-    <svg width="0" height="0" aria-hidden="true" style="position: absolute">
-      <filter id="wriggle" x="-5%" y="-20%" width="110%" height="140%">
-        <feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="2" seed="1">
-          <animate id="boil" attributeName="seed" values="1;2;3;4;5;6" dur="0.9s" calcMode="discrete" repeatCount="indefinite" />
-        </feTurbulence>
-        <feDisplacementMap in="SourceGraphic" scale="5" />
-      </filter>
-      <filter id="wriggle-soft" x="-5%" y="-5%" width="110%" height="110%">
-        <feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="2" seed="3">
-          <animate attributeName="seed" values="3;4;5;6" dur="1.6s" calcMode="discrete" repeatCount="indefinite" />
-        </feTurbulence>
-        <feDisplacementMap in="SourceGraphic" scale="3" />
-      </filter>
-    </svg>
-
     <main class="page">
       <header class="masthead">
-        <h1 class="title"><span class="pot" aria-hidden="true">🍲</span> Cook This</h1>
-        <p class="lede">Tell me what's in your kitchen. I'll find something delicious to make with it.</p>
+        <p class="eyebrow">A pantry-first recipe finder</p>
+        <h1 class="title">Cook This</h1>
+        <p class="lede">Tell me what's in your kitchen, and I'll find something good to make with it.</p>
       </header>
 
       <form id="pantry-form" class="pantry" autocomplete="off">
         <label for="ingredient" class="sr-only">Add an ingredient you have</label>
-        <div class="wriggle-box" id="box">
-          <svg class="wriggle-edge" aria-hidden="true"><rect x="0" y="0" width="100%" height="100%" rx="26" ry="26" /></svg>
+        <div class="box" id="box">
           <ul class="chips" id="chips" aria-label="Your ingredients"></ul>
           <input
             id="ingredient"
@@ -48,7 +32,7 @@
             aria-expanded="false"
             aria-controls="suggestions"
             aria-autocomplete="list"
-            placeholder="Type something you have… chicken, rice, lemon"
+            placeholder="Add an ingredient — chicken, rice, lemon…"
             enterkeyhint="enter"
           />
           <ul id="suggestions" class="suggestions" role="listbox" hidden></ul>
@@ -61,9 +45,9 @@
         <div class="controls">
           <label class="basics">
             <input type="checkbox" id="basics" checked />
-            <span>I have the basics <span class="muted">(salt, pepper, oil, butter, flour, sugar, water)</span></span>
+            <span>I have the basics <span class="muted">salt, pepper, oil, butter, flour, sugar, water</span></span>
           </label>
-          <button type="submit" class="cook" id="cook">Cook this!</button>
+          <button type="submit" class="cook" id="cook">Find recipes</button>
         </div>
       </form>
 

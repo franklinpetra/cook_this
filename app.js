@@ -7,7 +7,7 @@ const DETAILS_TO_FETCH = 16;
 const STORE_KEY = "cook-this-pantry";
 
 // Words that make an ingredient a different thing ("Chicken Stock" isn't chicken).
-const NOT_THE_SAME = ["stock", "powder", "sauce", "paste", "oil", "juice", "extract", "seasoning", "cube", "gravy"];
+const NOT_THE_SAME = ["spring", "stock", "powder", "sauce", "paste", "oil", "juice", "extract", "seasoning", "cube", "gravy"];
 
 const $ = (id) => document.getElementById(id);
 const form = $("pantry-form");
@@ -75,7 +75,7 @@ function renderChips() {
         `<li class="chip">${escapeHtml(name)}<button type="button" data-remove="${i}" aria-label="Remove ${escapeHtml(name)}">×</button></li>`,
     )
     .join("");
-  input.placeholder = pantry.length ? "Add another…" : "Type something you have… chicken, rice, lemon";
+  input.placeholder = pantry.length ? "Add another…" : "Add an ingredient — chicken, rice, lemon…";
   renderSamples();
 }
 
@@ -105,19 +105,9 @@ function add(text) {
     pantry.push(name);
     save();
     renderChips();
-    nudge();
   }
   input.value = "";
   hideSuggestions();
-}
-
-/** A quick extra wriggle when something lands in the box. */
-function nudge() {
-  const boil = $("boil");
-  if (!boil || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-  boil.setAttribute("dur", "0.3s");
-  clearTimeout(nudge.t);
-  nudge.t = setTimeout(() => boil.setAttribute("dur", document.activeElement === input ? "0.6s" : "0.9s"), 700);
 }
 
 // --- Suggestions while typing ------------------------------------------------
@@ -196,7 +186,7 @@ async function cook() {
   }
   cookBtn.disabled = true;
   resultsEl.innerHTML = "";
-  statusEl.innerHTML = `<span class="stir" aria-hidden="true">🥄</span> Rummaging through recipes…`;
+  statusEl.innerHTML = `<span class="dots" aria-hidden="true"><i></i><i></i><i></i></span> Finding recipes…`;
   try {
     // How many of your ingredients each recipe uses.
     const perIngredient = await Promise.all(pantry.map(mealsFor));
@@ -248,9 +238,9 @@ function render() {
     .map((r, i) => {
       const m = r.meal;
       const need = r.need.length
-        ? `<span class="badge need" title="${escapeHtml(r.need.map((n) => n.name).join(", "))}">Need ${r.need.length} more</span>`
+        ? `<span class="badge need" title="${escapeHtml(r.need.map((n) => n.name).join(", "))}">${r.need.length} to buy</span>`
         : `<span class="badge ready">Ready to cook</span>`;
-      return `<button type="button" class="card" data-open="${i}" style="animation-delay:${Math.min(i, 10) * 45}ms">
+      return `<button type="button" class="card" data-open="${i}" style="animation-delay:${Math.min(i, 10) * 40}ms">
         <img src="${m.strMealThumb}/medium" alt="" loading="lazy" />
         <span class="card-body">
           <span class="card-title">${escapeHtml(m.strMeal)}</span>
@@ -267,11 +257,17 @@ function byCookable(a, b) {
   return b.have * 2 - b.need.length - (a.have * 2 - a.need.length) || a.need.length - b.need.length;
 }
 
+/** Instruction lines, with short all-caps lines like "MARINATING THE CHICKEN" kept as section labels. */
 function steps(text) {
   return (text || "")
     .split(/\r?\n+/)
     .map((s) => s.replace(/^\s*(step\s*\d+[:.)]?|\d+[.)])\s*/i, "").trim())
-    .filter((s) => s.length > 2);
+    .filter((s) => s.length > 2)
+    .map((s) => {
+      const bare = s.replace(/^[-–—•*\s]+|[:\s]+$/g, "");
+      const heading = bare.length < 60 && bare === bare.toUpperCase() && /[A-Z]/.test(bare);
+      return heading ? { heading: true, text: bare.charAt(0) + bare.slice(1).toLowerCase() } : { heading: false, text: s };
+    });
 }
 
 function openRecipe(r) {
@@ -284,8 +280,8 @@ function openRecipe(r) {
       <button type="button" class="close" data-close aria-label="Close">×</button>
     </div>
     <div class="recipe-body">
-      <h2 id="recipe-title">${escapeHtml(m.strMeal)}</h2>
       <p class="meta">${escapeHtml([m.strArea, m.strCategory].filter(Boolean).join(" · "))}</p>
+      <h2 id="recipe-title">${escapeHtml(m.strMeal)}</h2>
       <h3>Ingredients</h3>
       <ul class="ingredients">
         ${r.ings
@@ -296,7 +292,9 @@ function openRecipe(r) {
           .join("")}
       </ul>
       <h3>How to make it</h3>
-      <ol class="steps">${steps(m.strInstructions).map((s) => `<li>${escapeHtml(s)}</li>`).join("")}</ol>
+      <ol class="steps">${steps(m.strInstructions)
+        .map((s) => (s.heading ? `<li class="sub">${escapeHtml(s.text)}</li>` : `<li>${escapeHtml(s.text)}</li>`))
+        .join("")}</ol>
       <div class="links">
         ${m.strYoutube ? `<a href="${escapeHtml(m.strYoutube)}" target="_blank" rel="noopener">▶ Watch it made</a>` : ""}
         ${m.strSource ? `<a href="${escapeHtml(m.strSource)}" target="_blank" rel="noopener">Original recipe</a>` : ""}
@@ -330,11 +328,7 @@ input.addEventListener("keydown", (e) => {
     renderChips();
   }
 });
-input.addEventListener("focus", () => $("boil")?.setAttribute("dur", "0.6s"));
-input.addEventListener("blur", () => {
-  $("boil")?.setAttribute("dur", "0.9s");
-  setTimeout(hideSuggestions, 150);
-});
+input.addEventListener("blur", () => setTimeout(hideSuggestions, 150));
 
 suggestionsEl.addEventListener("mousedown", (e) => {
   const li = e.target.closest("li");
@@ -386,10 +380,6 @@ resultsEl.addEventListener("click", (e) => {
 dialog.addEventListener("click", (e) => {
   if (e.target === dialog || e.target.closest("[data-close]")) dialog.close();
 });
-
-if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
-  document.querySelectorAll("animate").forEach((a) => a.remove());
-}
 
 renderChips();
 getJSON("list.php?i=list")

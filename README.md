@@ -9,7 +9,7 @@
 - Open a recipe to see what you have (✓), the basics you have (•), what you'd need (+), the steps, and a video when there is one.
 - Tick or untick "I have the basics" (salt, pepper, oil, butter, flour, sugar, water) to change what counts as missing.
 
-The search box wriggles. It's a hand-drawn "line boil" made with an SVG noise filter, and it wriggles faster while you type. It holds still for anyone who has reduced motion turned on.
+The design is editorial and calm: Fraunces headlines, Inter text, warm neutrals with a terracotta accent, and motion that stays still for anyone who has reduced motion turned on.
 
 ## How it works
 
