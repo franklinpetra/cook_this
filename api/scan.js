@@ -13,6 +13,15 @@ const MAX_IMAGE_CHARS = 3_000_000; // about 2.2 MB of JPEG once base64-encoded
 // In memory, so it resets when Vercel starts a fresh instance; the key's spending cap is the hard stop.
 const usage = { day: "", total: 0, byVisitor: new Map() };
 
+/** The key as pasted into Vercel, forgiving stray spaces, quotes, or a leading "OPENROUTER_API_KEY=". */
+function apiKey() {
+  return String(process.env.OPENROUTER_API_KEY || "")
+    .trim()
+    .replace(/^OPENROUTER_API_KEY\s*=\s*/, "")
+    .replace(/^["']|["']$/g, "")
+    .trim();
+}
+
 function allow(visitor) {
   const day = new Date().toISOString().slice(0, 10);
   if (usage.day !== day) Object.assign(usage, { day, total: 0, byVisitor: new Map() });
@@ -71,7 +80,8 @@ export default async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");
   if (req.method !== "POST") return res.status(405).json({ error: "Use POST." });
   if (!sameSite(req)) return res.status(403).json({ error: "Not allowed from this site." });
-  if (!process.env.OPENROUTER_API_KEY) return res.status(503).json({ error: "The photo scanner isn't set up yet." });
+  const key = apiKey();
+  if (!key) return res.status(503).json({ error: "The photo scanner isn't set up yet." });
 
   const image = req.body?.image;
   if (typeof image !== "string" || !/^data:image\/(jpeg|png|webp);base64,/.test(image)) {
@@ -88,7 +98,7 @@ export default async function handler(req, res) {
     const r = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+        Authorization: `Bearer ${key}`,
         "Content-Type": "application/json",
         "X-Title": "Cook This",
       },
@@ -108,7 +118,8 @@ export default async function handler(req, res) {
       signal: AbortSignal.timeout(45_000),
     });
     if (!r.ok) {
-      console.error("[scan] model error", r.status, (await r.text()).slice(0, 300));
+      // The key's shape helps diagnose setup problems without ever logging the key itself.
+      console.error("[scan] model error", r.status, (await r.text()).slice(0, 300), `key: ${key.length} chars, ${key.startsWith("sk-or-") ? "sk-or- prefix" : "unexpected prefix"}`);
       return res.status(502).json({ error: "The photo scanner is having trouble. Try again in a moment." });
     }
     const data = await r.json();
