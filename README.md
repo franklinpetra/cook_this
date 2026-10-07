@@ -25,7 +25,7 @@ A plain HTML, CSS, and JavaScript site with no build step, plus one small server
 
 - **Recipes** come from the free [TheMealDB](https://www.themealdb.com) API. Cook This looks up recipes for each ingredient (including close variants, so "Chicken" also finds "Chicken Thighs"), tallies the overlap, then loads the top matches to compare their ingredient lists with yours. American names are translated to TheMealDB's British ones, so "zucchini" finds recipes listed under "Courgettes".
 - **Photo scanning** (`api/scan.js`) sends the photo to a vision model (Gemini Flash) through [OpenRouter](https://openrouter.ai) and returns the ingredients it sees. To keep costs in check, each visitor gets 15 scans a day, each server instance has a daily ceiling, and the OpenRouter key has its own spending cap.
-- **Design:** Fraunces headlines, Inter text, an ocean palette of sea mist, deep water, and teal, and motion that holds still for anyone who has reduced motion turned on.
+- **Design:** a heavy Inter title, Fraunces for recipe names, Inter text, an ocean palette of sea mist, deep water, and teal, and motion that holds still for anyone who has reduced motion turned on.
 
 | File | What it does |
 |---|---|
