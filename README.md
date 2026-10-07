@@ -9,7 +9,7 @@
 - Open a recipe to see what you have (✓), the basics you have (•), what you'd need (+), the steps, and a video when there is one.
 - Tick or untick "I have the basics" (salt, pepper, oil, butter, flour, sugar, water) to change what counts as missing.
 
-The design is editorial and calm: Fraunces headlines, Inter text, warm neutrals with a terracotta accent, and motion that stays still for anyone who has reduced motion turned on.
+The design is editorial and calm: Fraunces headlines, Inter text, an ocean palette of sea mist, deep water, and teal, and motion that stays still for anyone who has reduced motion turned on.
 
 ## How it works
 

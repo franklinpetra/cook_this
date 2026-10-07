@@ -1,23 +1,24 @@
 :root {
-  --bg: #f7f3ec;
-  --surface: #fffdf9;
-  --ink: #1f1a15;
-  --ink-soft: #4a4139;
-  --muted: #8a7e72;
-  --line: #e6ddd0;
-  --line-strong: #d2c6b6;
-  --accent: #a4472a;
-  --accent-deep: #84361e;
-  --accent-tint: #f6e8e1;
-  --sage: #55704f;
-  --sage-tint: #e8eee4;
-  --amber: #9a6a1c;
-  --amber-tint: #f7eedb;
+  /* Inspired by the ocean: sea mist, deep water, teal shallows, and a touch of coral reef. */
+  --bg: #eef5f6;
+  --surface: #fbfdfd;
+  --ink: #0d2633;
+  --ink-soft: #34525f;
+  --muted: #6c8691;
+  --line: #d3e3e6;
+  --line-strong: #b5ccd2;
+  --accent: #0f6f85;
+  --accent-deep: #0b5466;
+  --accent-tint: #dbeef1;
+  --sage: #2e7d6b;
+  --sage-tint: #dcefe9;
+  --amber: #b4513e;
+  --amber-tint: #fbe8e3;
   --serif: "Fraunces", Georgia, "Times New Roman", serif;
   --sans: "Inter", system-ui, -apple-system, sans-serif;
   --radius: 14px;
-  --shadow: 0 1px 2px rgb(31 26 21 / 0.04), 0 8px 24px rgb(31 26 21 / 0.06);
-  --shadow-lift: 0 2px 4px rgb(31 26 21 / 0.05), 0 18px 40px rgb(31 26 21 / 0.1);
+  --shadow: 0 1px 2px rgb(13 38 51 / 0.05), 0 8px 24px rgb(13 38 51 / 0.07);
+  --shadow-lift: 0 2px 4px rgb(13 38 51 / 0.06), 0 18px 40px rgb(13 38 51 / 0.12);
   color-scheme: light;
 }
 
@@ -31,7 +32,9 @@ body {
 }
 
 body {
-  background: var(--bg);
+  background:
+    radial-gradient(1100px 420px at 50% -160px, #cfe6ea 0%, transparent 70%),
+    linear-gradient(180deg, #e7f1f3 0%, var(--bg) 480px);
   color: var(--ink);
   font-family: var(--sans);
   font-size: 16px;
@@ -68,15 +71,6 @@ body {
 .masthead {
   text-align: center;
   margin-bottom: 40px;
-}
-
-.eyebrow {
-  margin: 0 0 14px;
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: var(--accent);
 }
 
 .title {
@@ -125,7 +119,7 @@ body {
 
 .box:focus-within {
   border-color: var(--accent);
-  box-shadow: 0 0 0 4px rgb(164 71 42 / 0.12), var(--shadow);
+  box-shadow: 0 0 0 4px rgb(15 111 133 / 0.14), var(--shadow);
 }
 
 .chips {
@@ -143,8 +137,8 @@ body {
   border-radius: 999px;
   font-size: 0.92rem;
   font-weight: 500;
-  background: var(--sage-tint);
-  color: #2f4429;
+  background: var(--accent-tint);
+  color: var(--accent-deep);
   animation: fade-in 0.25s ease-out both;
 }
 
@@ -165,7 +159,7 @@ body {
 .chip button:hover,
 .chip button:focus-visible {
   opacity: 1;
-  background: rgb(47 68 41 / 0.1);
+  background: rgb(11 84 102 / 0.1);
   outline: none;
 }
 
@@ -390,7 +384,7 @@ a:focus-visible {
   object-fit: cover;
   display: block;
   border-radius: var(--radius);
-  background: #ece3d6;
+  background: #dbe8eb;
   box-shadow: var(--shadow);
   transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s;
 }
@@ -452,7 +446,7 @@ a:focus-visible {
 }
 
 .badge.uses {
-  color: #2f4429;
+  color: #1f5c4e;
   background: var(--sage-tint);
 }
 
@@ -503,11 +497,11 @@ a:focus-visible {
   padding: 0;
   background: var(--surface);
   color: var(--ink);
-  box-shadow: 0 30px 80px rgb(31 26 21 / 0.3);
+  box-shadow: 0 30px 80px rgb(13 38 51 / 0.3);
 }
 
 .recipe::backdrop {
-  background: rgb(31 26 21 / 0.5);
+  background: rgb(13 38 51 / 0.5);
   backdrop-filter: blur(3px);
 }
 
@@ -611,7 +605,7 @@ a:focus-visible {
 .ingredients .need .mark {
   background: var(--amber-tint);
   color: var(--amber);
-  box-shadow: inset 0 0 0 1px rgb(154 106 28 / 0.4);
+  box-shadow: inset 0 0 0 1px rgb(180 81 62 / 0.4);
 }
 
 .ingredients .measure {
