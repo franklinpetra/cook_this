@@ -10,6 +10,19 @@ const MAX_PANTRY = 15;
 // Words that make an ingredient a different thing ("Chicken Stock" isn't chicken).
 const NOT_THE_SAME = ["spring", "stock", "powder", "sauce", "paste", "oil", "juice", "extract", "seasoning", "cube", "gravy"];
 
+// Where "Get what's missing" sends people. An affiliate tag, once Petra has one, goes here;
+// when any tag is set, the recipe view shows the required disclosure.
+const AFFILIATE = { amazonTag: "" };
+const STORES = [
+  { name: "Instacart", url: (q) => `https://www.instacart.com/store/s?k=${encodeURIComponent(q)}` },
+  {
+    name: "Amazon Fresh",
+    url: (q) => `https://www.amazon.com/s?k=${encodeURIComponent(q)}&i=amazonfresh${AFFILIATE.amazonTag ? `&tag=${encodeURIComponent(AFFILIATE.amazonTag)}` : ""}`,
+  },
+  { name: "QFC", url: (q) => `https://www.qfc.com/search?query=${encodeURIComponent(q)}&searchType=default_search` },
+  { name: "Safeway", url: (q) => `https://www.safeway.com/shop/search-results.html?q=${encodeURIComponent(q)}` },
+];
+
 const $ = (id) => document.getElementById(id);
 const form = $("pantry-form");
 const input = $("ingredient");
@@ -288,6 +301,30 @@ function steps(text) {
     });
 }
 
+/** "Get what's missing": each ingredient to buy, with a search link at each store, and a copyable list. */
+function shopPanel(need) {
+  if (!need.length) return "";
+  const list = need.map((n) => n.name);
+  return `
+    <section class="shop" aria-label="Get what's missing">
+      <div class="shop-head">
+        <p class="shop-title">Get the ${need.length === 1 ? "one thing" : `${need.length} things`} you need</p>
+        <button type="button" class="link-btn small" data-copy="${escapeHtml(list.join("\n"))}">Copy list</button>
+      </div>
+      <ul class="shop-list">
+        ${list
+          .map(
+            (name) => `<li>
+              <span class="shop-item">${escapeHtml(name)}</span>
+              <span class="shop-links">${STORES.map((s) => `<a href="${escapeHtml(s.url(name))}" target="_blank" rel="noopener">${s.name}</a>`).join("")}</span>
+            </li>`,
+          )
+          .join("")}
+      </ul>
+      ${AFFILIATE.amazonTag ? `<p class="shop-note">As an Amazon Associate, Cook This earns from qualifying purchases.</p>` : ""}
+    </section>`;
+}
+
 function openRecipe(r) {
   const m = r.meal;
   const marks = { have: "✓", staple: "•", need: "+" };
@@ -300,6 +337,7 @@ function openRecipe(r) {
     <div class="recipe-body">
       <p class="meta">${escapeHtml([m.strArea, m.strCategory].filter(Boolean).join(" · "))}</p>
       <h2 id="recipe-title">${escapeHtml(m.strMeal)}</h2>
+      ${shopPanel(r.need)}
       <h3>Ingredients</h3>
       <ul class="ingredients">
         ${r.ings
@@ -316,7 +354,12 @@ function openRecipe(r) {
       <div class="links">
         ${m.strYoutube ? `<a href="${escapeHtml(m.strYoutube)}" target="_blank" rel="noopener">▶ Watch it made</a>` : ""}
         ${m.strSource ? `<a href="${escapeHtml(m.strSource)}" target="_blank" rel="noopener">Original recipe</a>` : ""}
+        <button type="button" class="link-btn" data-print>
+          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 9V4h10v5M7 17H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2"/><path d="M7 14h10v6H7z"/></svg>
+          Print
+        </button>
       </div>
+      <p class="print-only">Recipe from TheMealDB · found with Cook This, cookthis.link</p>
     </div>`;
   dialog.showModal();
   dialog.scrollTop = 0;
@@ -469,8 +512,19 @@ resultsEl.addEventListener("click", (e) => {
   if (card) openRecipe(lastResults[Number(card.dataset.open)]);
 });
 
-dialog.addEventListener("click", (e) => {
-  if (e.target === dialog || e.target.closest("[data-close]")) dialog.close();
+dialog.addEventListener("click", async (e) => {
+  if (e.target === dialog || e.target.closest("[data-close]")) return dialog.close();
+  if (e.target.closest("[data-print]")) return window.print();
+  const copy = e.target.closest("[data-copy]");
+  if (copy) {
+    try {
+      await navigator.clipboard.writeText(copy.dataset.copy);
+      copy.textContent = "Copied";
+    } catch {
+      copy.textContent = "Couldn't copy";
+    }
+    setTimeout(() => (copy.textContent = "Copy list"), 1800);
+  }
 });
 
 renderChips();

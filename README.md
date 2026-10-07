@@ -10,6 +10,8 @@
 2. **Or snap a photo.** Tap **Photo** in the box, or **Snap a photo** just below it, then take or choose a picture of your fridge, pantry, or cupboard. Cook This lists the food it spots; untick anything it got wrong and tap **Add these**. Multiple photos used one by one can be used to truly get your kitchens inventory in the search.
 3. **Tap Find recipes.** Recipes are ranked by how close you are to cooking them: how many of your ingredients each one uses, and how few you'd need to buy.
 4. **Open a recipe** to see what you have (✓), the basics you have (•), and what you'd need (+), with numbered steps and a video when there is one.
+5. **Get what's missing.** Each thing you'd need links to a search for it at Instacart, Amazon Fresh, QFC, and Safeway, and **Copy list** copies them all for your own shopping app.
+6. **Print** a clean copy of the recipe: just the photo, ingredients, and steps.
 
 Untick "I have the basics" (salt, pepper, oil, butter, flour, sugar, water) to count those as missing too.
 
@@ -31,7 +33,7 @@ A plain HTML, CSS, and JavaScript site with no build step, plus one small server
 |---|---|
 | `index.html` | The page |
 | `style.css` | The look |
-| `app.js` | Ingredients, suggestions, recipe search, and the recipe view |
+| `app.js` | Ingredients, suggestions, recipe search, the recipe view, store links, and printing (store and affiliate settings are at the top) |
 | `scan.js` | Shrinks a photo in the browser and sends it to the scanner |
 | `api/scan.js` | The serverless function that asks the vision model what food it sees |
 
