@@ -892,10 +892,37 @@ a:focus-visible {
 
 /* The invitation to use a photo, just under the search box. */
 .photo-hint {
-  margin: 14px 0 0;
+  margin: 16px 0 0;
   text-align: center;
-  font-size: 0.92rem;
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 1.05rem;
   color: var(--ink-soft);
+  text-wrap: balance;
+}
+.photo-hint .photo-link {
+  font-family: var(--sans);
+  font-style: normal;
+  font-size: 0.92rem;
+}
+.clear-all {
+  position: absolute;
+  top: -11px;
+  right: 26px;
+  font: inherit;
+  font-size: 0.75rem;
+  color: var(--muted);
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  padding: 2px 10px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.clear-all:hover,
+.clear-all:focus-visible {
+  color: var(--amber);
+  border-color: var(--amber);
 }
 
 .photo-link {

@@ -93,6 +93,7 @@ function renderChips() {
     )
     .join("");
   input.placeholder = pantry.length ? "Add another…" : "Add an ingredient — chicken, rice, lemon…";
+  $("clear-all").hidden = pantry.length < 2;
   renderSamples();
 }
 
@@ -553,6 +554,13 @@ $("box").addEventListener("click", (e) => {
   } else if (e.target === e.currentTarget) {
     input.focus();
   }
+});
+
+$("clear-all").addEventListener("click", () => {
+  pantry = [];
+  save();
+  renderChips();
+  input.focus();
 });
 
 $("try").addEventListener("click", (e) => {
