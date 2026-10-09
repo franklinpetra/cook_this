@@ -1,6 +1,8 @@
 // Cook This: add what's in your pantry, get recipes that use the most of it.
 // Recipes come from TheMealDB's free API, which needs no secret key.
 
+import { isSaved, onSavedChange, savedRecipes, sendSignInLink, signOut, startSync, syncAvailable, syncedEmail, toggleSaved } from "./saved.js";
+
 const API = "https://www.themealdb.com/api/json/v1/1";
 const SAMPLES = ["Chicken", "Rice", "Garlic", "Eggs", "Tomatoes", "Pasta", "Lemon", "Cheese"];
 const DETAILS_TO_FETCH = 16;
@@ -38,6 +40,7 @@ let allIngredients = [];
 let pantry = load();
 let active = -1;
 let lastResults = [];
+let shown = null; // the recipe open in the dialog
 
 // --- Small helpers -----------------------------------------------------------
 
@@ -264,6 +267,12 @@ function classify(meal) {
   }));
 }
 
+/** A full recipe, with each ingredient marked as one you have, a basic, or one you'd need. */
+function toResult(meal) {
+  const ings = classify(meal);
+  return { meal, ings, have: ings.filter((i) => i.status === "have").length, need: ings.filter((i) => i.status === "need") };
+}
+
 async function cook() {
   if (!pantry.length) {
     statusEl.textContent = "Add at least one thing from your kitchen first.";
@@ -299,13 +308,7 @@ async function cook() {
           .catch(() => null),
       ),
     );
-    lastResults = details
-      .filter(Boolean)
-      .map((meal) => {
-        const ings = classify(meal);
-        return { meal, ings, have: ings.filter((i) => i.status === "have").length, need: ings.filter((i) => i.status === "need") };
-      })
-      .sort(byCookable);
+    lastResults = details.filter(Boolean).map(toResult).sort(byCookable);
     render();
   } catch (err) {
     statusEl.textContent = "The recipe box is stuck. Check your connection and try again.";
@@ -382,6 +385,7 @@ function shopPanel(need) {
 
 function openRecipe(r) {
   const m = r.meal;
+  shown = r;
   const marks = { have: "✓", staple: "•", need: "+" };
   const labels = { have: "You have this", staple: "A basic you have", need: "You'd need this" };
   dialog.innerHTML = `
@@ -392,6 +396,7 @@ function openRecipe(r) {
     <div class="recipe-body">
       <p class="meta">${escapeHtml([m.strArea, m.strCategory].filter(Boolean).join(" · "))}</p>
       <h2 id="recipe-title">${escapeHtml(m.strMeal)}</h2>
+      <p class="save-row">${saveButton(m.idMeal)}</p>
       ${shopPanel(r.need)}
       <h3>Ingredients</h3>
       <ul class="ingredients">
@@ -580,6 +585,12 @@ resultsEl.addEventListener("click", (e) => {
 dialog.addEventListener("click", async (e) => {
   if (e.target === dialog || e.target.closest("[data-close]")) return dialog.close();
   if (e.target.closest("[data-print]")) return window.print();
+  const save = e.target.closest("[data-save]");
+  if (save && shown) {
+    toggleSaved(shown.meal);
+    save.outerHTML = saveButton(shown.meal.idMeal);
+    return;
+  }
   const copy = e.target.closest("[data-copy]");
   if (copy) {
     try {
@@ -592,7 +603,87 @@ dialog.addEventListener("click", async (e) => {
   }
 });
 
+// --- Saved recipes -------------------------------------------------------------
+
+const HEART = `<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>`;
+
+function saveButton(id) {
+  const on = isSaved(id);
+  return `<button type="button" class="link-btn save-btn" data-save aria-pressed="${on}">${HEART}${on ? "Saved" : "Save"}</button>`;
+}
+
+const savedEl = $("saved");
+const savedListEl = $("saved-list");
+const syncEl = $("sync");
+let syncNote = "";
+
+function renderSaved() {
+  const list = savedRecipes();
+  const email = syncedEmail();
+  savedEl.hidden = !list.length && !email;
+  $("saved-count").textContent = list.length ? `(${list.length})` : "";
+  savedListEl.innerHTML = list.length
+    ? list
+        .map(
+          (r) => `<button type="button" class="card" data-saved="${escapeHtml(r.id)}">
+        <img src="${escapeHtml(r.thumb)}/medium" alt="" loading="lazy" />
+        <span class="card-body">
+          <span class="card-title">${escapeHtml(r.name)}</span>
+          <span class="meta">${escapeHtml(r.meta || "")}</span>
+        </span>
+      </button>`,
+        )
+        .join("")
+    : `<p class="empty">Nothing saved yet. Open a recipe and tap Save.</p>`;
+
+  if (email) {
+    syncEl.innerHTML = `<p>Your saved recipes are kept with ${escapeHtml(email)}, so they show up on any device where you sign in. <button type="button" class="ghost" data-signout>Sign out</button></p>`;
+  } else if (syncAvailable()) {
+    syncEl.innerHTML = `<form class="sync-form" data-signin>
+        <label for="sync-email">Want these on your phone and computer? We'll email you a sign-in link. No password needed.</label>
+        <span class="sync-row">
+          <input id="sync-email" type="email" required placeholder="you@example.com" autocomplete="email" />
+          <button type="submit" class="link-btn">Email me a link</button>
+        </span>
+        <span class="sync-note" role="status">${escapeHtml(syncNote)}</span>
+      </form>`;
+  } else {
+    syncEl.innerHTML = "";
+  }
+}
+
+savedEl.addEventListener("click", async (e) => {
+  const card = e.target.closest("[data-saved]");
+  if (card) {
+    const meal = await getJSON(`lookup.php?i=${encodeURIComponent(card.dataset.saved)}`)
+      .then((d) => d.meals?.[0])
+      .catch(() => null);
+    if (meal) openRecipe(toResult(meal));
+    else statusEl.textContent = "That recipe wouldn't open. Check your connection and try again.";
+  } else if (e.target.closest("[data-signout]")) {
+    await signOut();
+  }
+});
+
+savedEl.addEventListener("submit", async (e) => {
+  if (!e.target.matches("[data-signin]")) return;
+  e.preventDefault();
+  const email = $("sync-email").value.trim();
+  try {
+    await sendSignInLink(email);
+    syncNote = `Check ${email} for a sign-in link. Open it on this device.`;
+  } catch (err) {
+    syncNote = "That didn't send. Check the address and try again.";
+    console.error(err);
+  }
+  renderSaved();
+});
+
+onSavedChange(renderSaved);
+
 renderChips();
+renderSaved();
+startSync().catch((err) => console.error("Saved recipes sync:", err));
 getJSON("list.php?i=list")
   .then((d) => {
     allIngredients = (d.meals ?? []).map((m) => m.strIngredient).filter(Boolean);

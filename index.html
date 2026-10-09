@@ -77,6 +77,14 @@
         </div>
       </form>
 
+      <section id="saved" class="saved" aria-label="Saved recipes" hidden>
+        <details>
+          <summary>Your saved recipes <span id="saved-count"></span></summary>
+          <div class="results saved-list" id="saved-list"></div>
+          <div class="sync" id="sync"></div>
+        </details>
+      </section>
+
       <p id="status" class="status" role="status" aria-live="polite"></p>
       <section id="results" class="results" aria-label="Recipes"></section>
     </main>
@@ -84,7 +92,7 @@
     <dialog id="recipe" class="recipe" aria-labelledby="recipe-title"></dialog>
 
     <footer class="footer">
-      Photos are sent to an AI service to identify ingredients and are not stored. That list of ingredients is matched with recipes from <a href="https://www.themealdb.com" target="_blank" rel="noopener">TheMealDB</a>.
+      Photos are sent to an AI service to identify ingredients and are not stored. That list of ingredients is matched with recipes from <a href="https://www.themealdb.com" target="_blank" rel="noopener">TheMealDB</a>. Saved recipes stay in your browser. If you sign in to see them on your other devices, they're stored with your email address.
     </footer>
 
     <script src="app.js" type="module"></script>

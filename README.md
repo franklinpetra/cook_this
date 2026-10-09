@@ -11,7 +11,8 @@
 3. **Tap Find recipes.** Recipes are ranked by how close you are to cooking them: how many of your ingredients each one uses, and how few you'd need to buy.
 4. **Open a recipe** to see what you have (✓), the basics you have (•), and what you'd need (+), with numbered steps and a video when there is one.
 5. **Get what's missing.** Each thing you'd need links to a search for it at Instacart, Amazon Fresh, QFC, and Safeway, and **Copy list** copies them all for your own shopping app.
-6. **Print** a clean copy of the recipe: just the photo, ingredients, and steps.
+6. **Save** recipes you like with the **Save** button under the recipe's name. They appear under **Your saved recipes**, with no account needed. To see them on another device too, enter your email there and open the sign-in link it sends.
+7. **Print** a clean copy of the recipe: just the photo, ingredients, and steps.
 
 Untick "I have the basics" (salt, pepper, oil, butter, flour, sugar, water) to count those as missing too.
 
@@ -20,6 +21,7 @@ Untick "I have the basics" (salt, pepper, oil, butter, flour, sugar, water) to c
 - **Photos** are shrunk in your browser, sent once to an AI vision service to identify ingredients, and never stored. Requests go only to providers that don't keep or train on data.
 - **Recipe searches** send only ingredient names to [TheMealDB](https://www.themealdb.com).
 - **Your ingredient list** is remembered in your own browser and nowhere else.
+- **Saved recipes** stay in your browser. Only if you choose to sign in are they also kept in our database, alongside your email address, so they can follow you to other devices. Each person can read only their own.
 
 ## How it works
 
@@ -34,6 +36,8 @@ A plain HTML, CSS, and JavaScript site with no build step, plus one small server
 | `index.html` | The page |
 | `style.css` | The look |
 | `app.js` | Ingredients, suggestions, recipe search, the recipe view, store links, and printing (store and affiliate settings are at the top) |
+| `saved.js` | Saved recipes: kept in the browser, and synced through Supabase for people who sign in (sync settings are at the top) |
+| `supabase/schema.sql` | The saved-recipes table and the rules that keep each person's saves private |
 | `scan.js` | Shrinks a photo in the browser and sends it to the scanner |
 | `api/scan.js` | The serverless function that asks the vision model what food it sees |
 
@@ -49,6 +53,17 @@ The old address, franklinpetra.github.io/cook_this, redirects here.
 2. Run `npx vercel dev` and open the address it prints.
 
 On Vercel, the same key is set as the `OPENROUTER_API_KEY` environment variable. Give that key a spending limit in OpenRouter.
+
+## Turning on saved-recipe syncing
+
+Saving works on each device without this. To let people sign in and see their saves everywhere:
+
+1. Create a free project at [supabase.com](https://supabase.com).
+2. In **SQL Editor**, paste the contents of `supabase/schema.sql` and run it.
+3. In **Authentication → URL Configuration**, set the Site URL to `https://cookthis.link` and add `https://cookthis.link` as a redirect URL.
+4. From **Settings → API**, copy the Project URL and the anon public key into `SYNC` at the top of `saved.js`. Both are safe to publish, because the table's rules only let each person reach their own rows.
+
+Supabase's built-in email sender is limited to a few sign-in emails an hour. Before many people use it, connect your own email service under **Authentication → SMTP Settings**.
 
 ## Credits
 
