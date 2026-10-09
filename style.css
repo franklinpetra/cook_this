@@ -1028,6 +1028,68 @@ a:focus-visible {
 }
 
 /* Printing a recipe: just the recipe, on white, without buttons or shopping links. */
+/* Saved recipes */
+.saved {
+  margin: 40px 0 0;
+}
+.saved summary {
+  cursor: pointer;
+  font-family: var(--serif);
+  font-size: 1.2rem;
+  color: var(--ink);
+  padding: 8px 0;
+}
+.saved summary span {
+  color: var(--muted);
+}
+.saved-list {
+  margin-top: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 20px 16px;
+}
+.saved-list .card-title {
+  font-size: 1rem;
+}
+.save-row {
+  margin: 4px 0 20px;
+}
+.sync {
+  margin-top: 24px;
+  color: var(--ink-soft);
+  font-size: 0.95rem;
+}
+.sync p {
+  margin: 0;
+}
+.sync-form {
+  display: grid;
+  gap: 10px;
+}
+.sync-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.sync-row input {
+  flex: 1 1 220px;
+  font: inherit;
+  padding: 8px 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+}
+.sync-note:empty {
+  display: none;
+}
+.save-btn[aria-pressed="true"] {
+  color: var(--amber);
+  border-color: var(--amber);
+}
+.save-btn[aria-pressed="true"] svg {
+  fill: currentColor;
+}
+
 @media print {
   @page {
     margin: 16mm;
@@ -1037,7 +1099,8 @@ a:focus-visible {
     display: block;
     min-height: 0;
   }
-  body > :not(dialog) {
+  body > :not(dialog),
+  .save-row {
     display: none !important;
   }
   .recipe,
