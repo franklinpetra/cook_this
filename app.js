@@ -129,16 +129,71 @@ function canonical(text) {
   return text.trim().replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+/** True when TheMealDB (or our American-name table) knows this exact ingredient. */
+function known(text) {
+  const t = norm(text);
+  return Boolean(SAME_AS[t] || allIngredients.some((n) => norm(n) === t || singular(norm(n)) === singular(t)));
+}
+
+// Commas, semicolons, new lines and slashes separate items in a typed or pasted list; so do "&", "and" and
+// "plus", unless they are part of a known name.
+const SEPARATORS = /\s*[,;\n\/]\s*/;
+const JOINERS = /\s*(?:[&+]|\band\b|\bplus\b)\s*/i;
+
+/**
+ * Turns whatever was typed into separate ingredients: "limes, chicken, cheese, bread" or
+ * "limes chicken cheese bread" both become four. Known multi-word names ("olive oil") stay whole.
+ */
+function splitIngredients(text) {
+  const parts = text.split(SEPARATORS).flatMap((part) => (known(part) ? [part] : part.split(JOINERS)));
+  return parts.flatMap((part) => {
+    const w = part.split(/\s+/).filter(Boolean);
+    if (w.length < 2 || known(part)) return w.length ? [part.trim()] : [];
+    // Longest known name at each position, up to three words; unknown words lead into the next item ("fresh limes").
+    const found = [];
+    let lead = [];
+    for (let i = 0; i < w.length; ) {
+      let len = Math.min(3, w.length - i);
+      while (len > 0 && !known(w.slice(i, i + len).join(" "))) len--;
+      if (len) {
+        found.push([...lead, ...w.slice(i, i + len)].join(" "));
+        lead = [];
+        i += len;
+      } else {
+        lead.push(w[i++]);
+      }
+    }
+    if (found.length < 2) return [part.trim()];
+    if (lead.length) found[found.length - 1] += ` ${lead.join(" ")}`;
+    return found;
+  });
+}
+
 function add(text) {
-  const name = canonical(text);
-  if (!name) return;
-  if (!pantry.some((p) => norm(p) === norm(name)) && pantry.length < MAX_PANTRY) {
-    pantry.push(name);
+  let changed = false;
+  for (const item of splitIngredients(text)) {
+    const name = canonical(item);
+    if (name && !pantry.some((p) => norm(p) === norm(name)) && pantry.length < MAX_PANTRY) {
+      pantry.push(name);
+      changed = true;
+    }
+  }
+  if (changed) {
     save();
     renderChips();
   }
   input.value = "";
   hideSuggestions();
+}
+
+/** Phones often don't report the comma key, and pasted lists arrive all at once: add finished items as they appear. */
+function addFinishedItems() {
+  const value = input.value;
+  const cut = Math.max(value.lastIndexOf(","), value.lastIndexOf(";"), value.lastIndexOf("\n"));
+  if (cut < 0) return;
+  const rest = value.slice(cut + 1).trimStart();
+  add(value.slice(0, cut));
+  input.value = rest;
 }
 
 // --- Suggestions while typing ------------------------------------------------
@@ -441,7 +496,10 @@ $("scan-cancel").addEventListener("click", closeScan);
 
 // --- Wiring ------------------------------------------------------------------
 
-input.addEventListener("input", showSuggestions);
+input.addEventListener("input", () => {
+  addFinishedItems();
+  showSuggestions();
+});
 input.addEventListener("keydown", (e) => {
   if (e.key === "ArrowDown") {
     e.preventDefault();
@@ -464,6 +522,13 @@ input.addEventListener("keydown", (e) => {
   }
 });
 input.addEventListener("blur", () => setTimeout(hideSuggestions, 150));
+// A pasted list may be one item per line, which a one-line box would otherwise run together.
+input.addEventListener("paste", (e) => {
+  const text = e.clipboardData?.getData("text") ?? "";
+  if (!/[,;\n]/.test(text)) return;
+  e.preventDefault();
+  add(`${input.value} ${text}`);
+});
 
 suggestionsEl.addEventListener("mousedown", (e) => {
   const li = e.target.closest("li");
