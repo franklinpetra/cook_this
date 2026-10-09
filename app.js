@@ -12,7 +12,7 @@ const NOT_THE_SAME = ["spring", "stock", "powder", "sauce", "paste", "oil", "jui
 
 // Where "Get what's missing" sends people. An affiliate tag, once Petra has one, goes here;
 // when any tag is set, the recipe view shows the required disclosure.
-const AFFILIATE = { amazonTag: "" };
+const AFFILIATE = { amazonTag: "cookthis-20" };
 const STORES = [
   { name: "Instacart", url: (q) => `https://www.instacart.com/store/s?k=${encodeURIComponent(q)}` },
   {
