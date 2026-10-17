@@ -12,16 +12,18 @@
 - **Honest about what you have.** Butter isn't peanut butter, rice isn't rice vinegar, and black pepper isn't a bell pepper, so "Ready to cook" means ready to cook. Lemons do count as lemon juice.
 - **Or just take a picture** of your fridge and let AI list what's in it.
 - **One tap to buy what's missing.** **Shop ingredients** sends just the missing items to an Instacart page where you pick your store, and **Add to my QFC cart** puts them straight into your Kroger-family cart.
+- **Keeps up with you.** Once recipes are showing, adding or removing an ingredient updates them on its own. Tap **Vegetarian** for meat-free recipes, or **Surprise me** for one good match picked at random.
+- **Celebrates what you have.** Every recipe says how much of it is already in your kitchen ("You already have 8 of the 12 ingredients"), and the ones you can make right now glow.
 - **NYT Cooking subscribers** can send the same ingredient list to a New York Times Cooking search with one tap from the bottom of the page.
 
 ## Using it
 
 1. **Add what you have.** Type a few ingredients (chicken, rice, lemon…) and pick from the suggestions, or tap one of the "Try" ideas. A whole list works too: "limes, chicken, cheese, bread" or just "turkey edamame heavy cream tofu" adds each one, and small typos like "brocoli" are fixed. The list holds up to 15 ingredients.
 2. **Or snap a photo.** Tap **Photo** in the box, or **Snap a photo** just below it, then take or choose a picture of your fridge, pantry, or cupboard. Cook This lists the food it spots; untick anything it got wrong and tap **Add these**. Multiple photos used one by one can be used to truly get your kitchen's inventory in the search.
-3. **Tap Find recipes.** Recipes are ranked by how close you are to cooking them: how many of your ingredients each one uses, and how few you'd need to buy.
+3. **Tap What can I make?** Recipes are ranked by how close you are to cooking them: how many of your ingredients each one uses, and how few you'd need to buy.
 4. **Open a recipe** to see what you have (✓), the basics you have (•), and what you'd need (+), with numbered steps and a video when there is one.
 5. **Get what's missing.** Tap **Shop ingredients** for an Instacart page with everything you need, or **Add to my QFC cart** to sign in to your Kroger account and fill your cart. Each item also links to a search for it at Instacart, Amazon Fresh, QFC, and Safeway, and **Copy list** copies them all for your own shopping app.
-6. **Save** recipes you like with the **Save** button under the recipe's name. They appear under **Your saved recipes**, with no account needed. To see them on another device too, enter your email there and open the sign-in link it sends.
+6. **Save** recipes you like with the **Save** button under the recipe's name. They appear under **Your saved recipes**, one tap away at the top right, with no account needed. To see them on another device too, enter your email there and open the sign-in link it sends.
 7. **Print** a clean copy of the recipe: just the photo, ingredients, and steps.
 8. **Subscribe to NYT Cooking?** The link at the bottom of the page searches New York Times Cooking for the ingredients on your list.
 

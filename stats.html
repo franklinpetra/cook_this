@@ -50,7 +50,7 @@
       const $ = (id) => document.getElementById(id);
       const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
       const sum = (rows, key) => rows.reduce((n, r) => n + (r.counts[key] || 0), 0);
-      const COLUMNS = [["visit", "Visits"], ["search", "Searches"], ["scan", "Photo scans"], ["open", "Recipes opened"], ["shop", "Store links"], ["instacart", "Instacart"], ["kroger", "Kroger cart"], ["copy", "Lists copied"], ["save", "Saves"], ["print", "Prints"], ["nyt", "NYT Cooking"]];
+      const COLUMNS = [["visit", "Visits"], ["search", "Searches"], ["scan", "Photo scans"], ["open", "Recipes opened"], ["shop", "Store links"], ["instacart", "Instacart"], ["kroger", "Kroger cart"], ["copy", "Lists copied"], ["save", "Saves"], ["print", "Prints"], ["nyt", "NYT Cooking"], ["veg", "Vegetarian"], ["surprise", "Surprise me"]];
 
       function top(title, rows) {
         return `<div><h2>${title}</h2><ol>${rows.length ? rows.map(([k, v]) => `<li>${esc(k)}<span>${v}</span></li>`).join("") : "<li>Nothing yet<span></span></li>"}</ol></div>`;
