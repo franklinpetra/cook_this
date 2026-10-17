@@ -1,10 +1,11 @@
 // Cook This: add what's in your pantry, get recipes that use the most of it.
 // Recipes come from TheMealDB's free API, which needs no secret key.
 
+import { AFFILIATE, SAMPLES, STORES } from "./brand.js";
+import { track } from "./track.js";
 import { isSaved, onSavedChange, savedRecipes, sendSignInLink, signOut, startSync, syncAvailable, syncedEmail, toggleSaved } from "./saved.js";
 
 const API = "https://www.themealdb.com/api/json/v1/1";
-const SAMPLES = ["Chicken", "Rice", "Garlic", "Eggs", "Tomatoes", "Pasta", "Lemon", "Cheese"];
 const DETAILS_TO_FETCH = 16;
 const STORE_KEY = "cook-this-pantry";
 const MAX_PANTRY = 15;
@@ -21,18 +22,7 @@ const PEPPER_SPICE = ["black", "white", "ground", "cracked", "freshly", "pepper"
 // Fresh citrus gives you its own juice.
 const SQUEEZABLE = ["lemon", "lime"];
 
-// Where "Get what's missing" sends people. An affiliate tag, once Petra has one, goes here;
-// when any tag is set, the recipe view shows the required disclosure.
-const AFFILIATE = { amazonTag: "cookthis-20" };
-const STORES = [
-  { name: "Instacart", url: (q) => `https://www.instacart.com/store/s?k=${encodeURIComponent(q)}` },
-  {
-    name: "Amazon Fresh",
-    url: (q) => `https://www.amazon.com/s?k=${encodeURIComponent(q)}&i=amazonfresh${AFFILIATE.amazonTag ? `&tag=${encodeURIComponent(AFFILIATE.amazonTag)}` : ""}`,
-  },
-  { name: "QFC", url: (q) => `https://www.qfc.com/search?query=${encodeURIComponent(q)}&searchType=default_search` },
-  { name: "Safeway", url: (q) => `https://www.safeway.com/shop/search-results.html?q=${encodeURIComponent(q)}` },
-];
+
 
 const $ = (id) => document.getElementById(id);
 const form = $("pantry-form");
@@ -49,6 +39,8 @@ let allIngredients = [];
 let pantry = load();
 let active = -1;
 let lastResults = [];
+// Optional buy buttons, switched on server-side (api/config.js): { instacart: true, kroger: "QFC" }.
+let services = {};
 let shown = null; // the recipe open in the dialog
 
 // --- Small helpers -----------------------------------------------------------
@@ -341,6 +333,7 @@ async function cook() {
     return;
   }
   cookBtn.disabled = true;
+  track("search", { have: pantry });
   resultsEl.innerHTML = "";
   statusEl.innerHTML = `<span class="dots" aria-hidden="true"><i></i><i></i><i></i></span> Finding recipes…`;
   try {
@@ -430,18 +423,31 @@ function shopPanel(need) {
         <p class="shop-title">Get the ${need.length === 1 ? "one thing" : `${need.length} things`} you need</p>
         <button type="button" class="link-btn small" data-copy="${escapeHtml(list.join("\n"))}">Copy list</button>
       </div>
+      ${buyButtons()}
       <ul class="shop-list">
         ${list
           .map(
             (name) => `<li>
               <span class="shop-item">${escapeHtml(name)}</span>
-              <span class="shop-links">${STORES.map((s) => `<a href="${escapeHtml(s.url(name))}" target="_blank" rel="noopener">${s.name}</a>`).join("")}</span>
+              <span class="shop-links">${STORES.map((s) => `<a href="${escapeHtml(s.url(name))}" target="_blank" rel="noopener" data-store="${escapeHtml(s.name)}">${s.name}</a>`).join("")}</span>
             </li>`,
           )
           .join("")}
       </ul>
       ${AFFILIATE.amazonTag ? `<p class="shop-note">As an Amazon Associate, Cook This earns from qualifying purchases.</p>` : ""}
     </section>`;
+}
+
+const CARROT = `<img src="icons/instacart-carrot.svg" alt="" width="22" height="22" />`;
+
+/** One-tap buying: everything missing in a single Instacart page, or straight into a Kroger-family cart. */
+function buyButtons() {
+  if (!services.instacart && !services.kroger) return "";
+  return `<div class="buy">
+    ${services.instacart ? `<button type="button" class="instacart-cta" data-instacart>${CARROT}Shop ingredients</button>` : ""}
+    ${services.kroger ? `<button type="button" class="kroger-cta" data-kroger>Add to my ${escapeHtml(services.kroger)} cart</button>` : ""}
+  </div>
+  <p class="buy-note" id="buy-note" role="status" aria-live="polite"></p>`;
 }
 
 function openRecipe(r) {
@@ -473,7 +479,7 @@ function openRecipe(r) {
         .map((s) => (s.heading ? `<li class="sub">${escapeHtml(s.text)}</li>` : `<li>${escapeHtml(s.text)}</li>`))
         .join("")}</ol>
       <div class="links">
-        ${m.strYoutube ? `<a href="${escapeHtml(m.strYoutube)}" target="_blank" rel="noopener">▶ Watch it made</a>` : ""}
+        ${m.strYoutube ? `<a href="${escapeHtml(m.strYoutube)}" target="_blank" rel="noopener" data-video>▶ Watch it made</a>` : ""}
         ${m.strSource ? `<a href="${escapeHtml(m.strSource)}" target="_blank" rel="noopener">Original recipe</a>` : ""}
         <button type="button" class="link-btn" data-print>
           <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 9V4h10v5M7 17H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2"/><path d="M7 14h10v6H7z"/></svg>
@@ -484,6 +490,7 @@ function openRecipe(r) {
     </div>`;
   dialog.showModal();
   dialog.scrollTop = 0;
+  track("open", { detail: m.strMeal, need: r.need.map((n) => n.name) });
 }
 
 // --- Ingredients from a photo -------------------------------------------------
@@ -507,6 +514,7 @@ async function scan(file) {
   if (img.src) URL.revokeObjectURL(img.src);
   img.src = URL.createObjectURL(file);
   setScan("Looking for ingredients…");
+  track("scan");
   scanEl.classList.add("busy");
   scanEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
   try {
@@ -652,10 +660,18 @@ resultsEl.addEventListener("click", (e) => {
 
 dialog.addEventListener("click", async (e) => {
   if (e.target === dialog || e.target.closest("[data-close]")) return dialog.close();
-  if (e.target.closest("[data-print]")) return window.print();
+  if (e.target.closest("[data-print]")) {
+    track("print");
+    return window.print();
+  }
+  const store = e.target.closest("[data-store]");
+  if (store) return track("shop", { detail: store.dataset.store });
+  if (e.target.closest("[data-video]")) return track("video");
+  if (e.target.closest("[data-instacart]") && shown) return shopInstacart(shown);
+  if (e.target.closest("[data-kroger]") && shown) return addToKroger(shown.need.map((n) => n.name));
   const save = e.target.closest("[data-save]");
   if (save && shown) {
-    toggleSaved(shown.meal);
+    if (toggleSaved(shown.meal)) track("save");
     save.outerHTML = saveButton(shown.meal.idMeal);
     return;
   }
@@ -663,6 +679,7 @@ dialog.addEventListener("click", async (e) => {
   if (copy) {
     try {
       await navigator.clipboard.writeText(copy.dataset.copy);
+      track("copy");
       copy.textContent = "Copied";
     } catch {
       copy.textContent = "Couldn't copy";
@@ -670,6 +687,89 @@ dialog.addEventListener("click", async (e) => {
     setTimeout(() => (copy.textContent = "Copy list"), 1800);
   }
 });
+
+// --- Buying what's missing ------------------------------------------------------
+
+const PENDING_KEY = "cook-this-kroger-pending";
+const withCartLink = (text, link) => escapeHtml(text) + (link ? ` <a href="${escapeHtml(link)}" target="_blank" rel="noopener">Open your cart</a>` : "");
+const buyNote = (text, link) => {
+  const el = $("buy-note");
+  if (el) el.innerHTML = withCartLink(text, link);
+};
+
+async function shopInstacart(r) {
+  track("instacart");
+  // Open the tab now, while the tap still counts as the reason, then point it at the page once it's ready.
+  const tab = window.open("", "_blank");
+  buyNote("Making your Instacart list…");
+  try {
+    const res = await fetch("api/instacart", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: r.meal.strMeal, image: r.meal.strMealThumb, items: r.need.map((n) => ({ name: n.name, measure: n.measure })) }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.url) throw new Error(data.error || "Instacart isn't answering right now.");
+    if (tab) tab.location.href = data.url;
+    else location.href = data.url;
+    buyNote("");
+  } catch (err) {
+    tab?.close();
+    buyNote(err.message);
+  }
+}
+
+/** Adds the missing items to the shopper's Kroger-family cart, signing them in first if needed. */
+async function addToKroger(items, show = buyNote) {
+  track("kroger");
+  show("Finding your ingredients at the store…");
+  try {
+    const res = await fetch("api/kroger/cart", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ items }) });
+    const data = await res.json().catch(() => ({}));
+    if (data.signIn) {
+      try {
+        sessionStorage.setItem(PENDING_KEY, JSON.stringify(items));
+      } catch {}
+      location.href = "api/kroger/login";
+      return;
+    }
+    if (!res.ok) throw new Error(data.error || "The store isn't answering right now.");
+    const added = data.added.length;
+    show(
+      `Added ${added} ${added === 1 ? "item" : "items"} to your ${services.kroger || "Kroger"} cart.` +
+        (data.notFound.length ? ` Couldn't find: ${data.notFound.join(", ")}.` : ""),
+      data.cart,
+    );
+  } catch (err) {
+    show(err.message);
+  }
+}
+
+/** A message across the top of the page, for when someone comes back from signing in at the store. */
+function notice(text, link) {
+  let el = $("notice");
+  if (!el) {
+    el = document.createElement("p");
+    el.id = "notice";
+    el.className = "notice";
+    el.setAttribute("role", "status");
+    document.querySelector(".page").prepend(el);
+  }
+  el.innerHTML = withCartLink(text, link);
+}
+
+function finishKrogerSignIn() {
+  const result = new URLSearchParams(location.search).get("kroger");
+  if (!result) return;
+  history.replaceState(null, "", location.pathname);
+  let items = [];
+  try {
+    items = JSON.parse(sessionStorage.getItem(PENDING_KEY) || "[]");
+    sessionStorage.removeItem(PENDING_KEY);
+  } catch {}
+  if (result !== "connected") return notice("Signing in to the store didn't finish, so nothing was added to your cart.");
+  if (items.length) addToKroger(items, notice);
+}
 
 // --- Saved recipes -------------------------------------------------------------
 
@@ -751,6 +851,13 @@ onSavedChange(renderSaved);
 
 renderChips();
 renderSaved();
+track("visit");
+fetch("api/config")
+  .then((r) => (r.ok ? r.json() : {}))
+  .then((c) => (services = c))
+  .catch(() => {})
+  .finally(finishKrogerSignIn);
+$("nyt").addEventListener("click", () => track("nyt"));
 startSync().catch((err) => console.error("Saved recipes sync:", err));
 getJSON("list.php?i=list")
   .then((d) => {

@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>Cook This · Usage</title>
+    <link rel="icon" href="icons/favicon.ico" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500&family=Inter:wght@400;500;600;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="style.css" />
+    <style>
+      .stats { max-width: 960px; margin: 0 auto; padding: 56px 16px 64px; }
+      .stats h1 { font-weight: 800; letter-spacing: -0.03em; font-size: 2.2rem; margin: 0 0 4px; color: var(--ink); }
+      .stats h2 { font-family: var(--serif); font-weight: 500; font-size: 1.15rem; margin: 40px 0 12px; color: var(--ink); }
+      .stats .sub { color: var(--muted); margin: 0 0 28px; }
+      .login[hidden] { display: none; }
+      .login { display: flex; gap: 10px; flex-wrap: wrap; }
+      .login input { font: inherit; padding: 10px 14px; border: 1px solid var(--line-strong); border-radius: 999px; background: var(--surface); min-width: 0; flex: 1 1 14rem; }
+      .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
+      .tile { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; }
+      .tile b { display: block; font-size: 1.9rem; font-weight: 800; letter-spacing: -0.02em; color: var(--ink); font-variant-numeric: tabular-nums; }
+      .tile span { color: var(--muted); font-size: 0.85rem; }
+      .tops { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px 28px; }
+      .tops ol { margin: 0; padding: 0; list-style: none; }
+      .tops li { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-bottom: 1px solid var(--line); text-transform: capitalize; font-size: 0.92rem; }
+      .tops li span { color: var(--muted); font-variant-numeric: tabular-nums; }
+      .scroll { overflow-x: auto; }
+      table { border-collapse: collapse; width: 100%; font-size: 0.88rem; font-variant-numeric: tabular-nums; }
+      th, td { padding: 7px 10px; text-align: right; border-bottom: 1px solid var(--line); white-space: nowrap; }
+      th:first-child, td:first-child { text-align: left; }
+      th { color: var(--muted); font-weight: 500; }
+      .err { color: var(--amber); }
+    </style>
+  </head>
+  <body>
+    <main class="stats">
+      <h1>Usage</h1>
+      <p class="sub">Counts only: no names, emails, or IP addresses are kept. The last 30 days.</p>
+      <form class="login" id="login">
+        <input id="token" type="password" placeholder="Stats password" autocomplete="current-password" aria-label="Stats password" />
+        <button class="cook" type="submit">Show</button>
+      </form>
+      <p class="err" id="err" role="alert"></p>
+      <div id="out"></div>
+    </main>
+    <script type="module">
+      const KEY = "cook-this-stats-token";
+      const $ = (id) => document.getElementById(id);
+      const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+      const sum = (rows, key) => rows.reduce((n, r) => n + (r.counts[key] || 0), 0);
+      const COLUMNS = [["visit", "Visits"], ["search", "Searches"], ["scan", "Photo scans"], ["open", "Recipes opened"], ["shop", "Store links"], ["instacart", "Instacart"], ["kroger", "Kroger cart"], ["copy", "Lists copied"], ["save", "Saves"], ["print", "Prints"], ["nyt", "NYT Cooking"]];
+
+      function top(title, rows) {
+        return `<div><h2>${title}</h2><ol>${rows.length ? rows.map(([k, v]) => `<li>${esc(k)}<span>${v}</span></li>`).join("") : "<li>Nothing yet<span></span></li>"}</ol></div>`;
+      }
+
+      async function show(token) {
+        $("err").textContent = "";
+        const r = await fetch("api/stats", { headers: { Authorization: `Bearer ${token}` } });
+        const data = await r.json().catch(() => ({}));
+        if (!r.ok) return ($("err").textContent = data.error || "Couldn't load the numbers.");
+        try { localStorage.setItem(KEY, token); } catch {}
+        $("login").hidden = true;
+        const d = data.daily;
+        const week = d.slice(0, 7);
+        const stores = {};
+        for (const row of d) for (const [k, v] of Object.entries(row.counts)) if (k.startsWith("shop:")) stores[k.slice(5)] = (stores[k.slice(5)] || 0) + v;
+        const clicks = sum(d, "shop") + sum(d, "instacart") + sum(d, "kroger");
+        $("out").innerHTML = `
+          <div class="tiles">
+            <div class="tile"><b>${week.reduce((n, r) => n + r.visitors, 0)}</b><span>Visitors, last 7 days*</span></div>
+            <div class="tile"><b>${d.reduce((n, r) => n + r.visitors, 0)}</b><span>Visitors, 30 days*</span></div>
+            <div class="tile"><b>${sum(d, "search")}</b><span>Searches</span></div>
+            <div class="tile"><b>${sum(d, "open")}</b><span>Recipes opened</span></div>
+            <div class="tile"><b>${clicks}</b><span>Clicks to buy</span></div>
+            <div class="tile"><b>${sum(d, "open") ? Math.round((100 * clicks) / sum(d, "open")) : 0}%</b><span>Opens that led to a buy click</span></div>
+          </div>
+          <p class="sub" style="margin-top:10px">*Daily visitors added up; someone who comes on three days counts three times.</p>
+          <div class="tops">
+            ${top("What people have", data.have)}
+            ${top("What people need to buy", data.need)}
+            ${top("Recipes opened most", data.recipes)}
+            ${top("Store links clicked", Object.entries(stores).sort((a, b) => b[1] - a[1]))}
+          </div>
+          <h2>Day by day</h2>
+          <div class="scroll"><table>
+            <tr><th>Day</th><th>Visitors</th>${COLUMNS.map(([, l]) => `<th>${l}</th>`).join("")}</tr>
+            ${d.map((r) => `<tr><td>${r.day}</td><td>${r.visitors}</td>${COLUMNS.map(([k]) => `<td>${r.counts[k] || ""}</td>`).join("")}</tr>`).join("")}
+          </table></div>`;
+      }
+
+      $("login").addEventListener("submit", (e) => {
+        e.preventDefault();
+        show($("token").value.trim());
+      });
+      try {
+        const saved = localStorage.getItem(KEY);
+        if (saved) show(saved);
+      } catch {}
+    </script>
+  </body>
+</html>
