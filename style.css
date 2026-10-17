@@ -4,7 +4,7 @@
   --surface: #fbfdfd;
   --ink: #0d2633;
   --ink-soft: #34525f;
-  --muted: #6c8691;
+  --muted: #596f78;
   --line: #d3e3e6;
   --line-strong: #b5ccd2;
   --accent: #0f6f85;
@@ -12,7 +12,7 @@
   --accent-tint: #dbeef1;
   --sage: #2e7d6b;
   --sage-tint: #dcefe9;
-  --amber: #b4513e;
+  --amber: #ab4c3a;
   --amber-tint: #fbe8e3;
   --sage-deep: #1f5c4e;
   --glow: #cfe6ea; /* the soft light behind the title */
@@ -29,6 +29,11 @@
 
 * {
   box-sizing: border-box;
+}
+
+/* Hidden means hidden, even for elements whose own rule sets a display. */
+[hidden] {
+  display: none !important;
 }
 
 html,
@@ -1009,7 +1014,7 @@ a:focus-visible {
 .shop-note {
   margin: 8px 0 0;
   font-size: 0.78rem;
-  color: var(--muted);
+  color: var(--ink-soft);
 }
 
 .link-btn {
@@ -1406,5 +1411,19 @@ a:focus-visible {
 @media print {
   .have-line {
     display: none;
+  }
+}
+
+/* Long names wrap inside their chip instead of stretching the page. */
+.chip {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 560px) {
+  /* The footer's note gets the full width under the logo on phones. */
+  .footer {
+    flex-direction: column;
+    text-align: center;
   }
 }

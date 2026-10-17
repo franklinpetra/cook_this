@@ -2,16 +2,16 @@
 //
 // The photo goes to a vision model through OpenRouter and is never saved or logged here.
 // Requests go only to providers that don't keep or train on data. Limits keep a stranger
-// from running up the bill: each visitor gets a few scans a day, each server instance has
-// a daily ceiling, and the OpenRouter key itself has a spending cap set in OpenRouter.
+// from running up the bill: each visitor gets a few scans a day, the whole site has a daily
+// ceiling (both counted in Redis, so they hold across server instances), and the OpenRouter
+// key itself has a spending cap set in OpenRouter.
+
+import { clientIp, sameSite, underLimit } from "./_guard.js";
 
 const MODEL = process.env.COOK_THIS_VISION_MODEL || "google/gemini-3.8-flash";
 const PER_VISITOR_PER_DAY = 15;
-const PER_INSTANCE_PER_DAY = 400;
+const SITE_PER_DAY = 400;
 const MAX_IMAGE_CHARS = 3_000_000; // about 2.2 MB of JPEG once base64-encoded
-
-// In memory, so it resets when Vercel starts a fresh instance; the key's spending cap is the hard stop.
-const usage = { day: "", total: 0, byVisitor: new Map() };
 
 /** The key as pasted into Vercel, forgiving stray spaces, quotes, or a leading "OPENROUTER_API_KEY=". */
 function apiKey() {
@@ -20,16 +20,6 @@ function apiKey() {
     .replace(/^OPENROUTER_API_KEY\s*=\s*/, "")
     .replace(/^["']|["']$/g, "")
     .trim();
-}
-
-function allow(visitor) {
-  const day = new Date().toISOString().slice(0, 10);
-  if (usage.day !== day) Object.assign(usage, { day, total: 0, byVisitor: new Map() });
-  const used = usage.byVisitor.get(visitor) ?? 0;
-  if (used >= PER_VISITOR_PER_DAY || usage.total >= PER_INSTANCE_PER_DAY) return false;
-  usage.byVisitor.set(visitor, used + 1);
-  usage.total++;
-  return true;
 }
 
 const PROMPT = `You look at one photo of someone's kitchen: a pantry shelf, fridge, cupboard, or counter.
@@ -66,16 +56,6 @@ function readJson(text) {
   }
 }
 
-function sameSite(req) {
-  const origin = req.headers.origin;
-  if (!origin) return true; // same-origin form posts and some browsers omit it
-  try {
-    return new URL(origin).host === req.headers.host;
-  } catch {
-    return false;
-  }
-}
-
 export default async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");
   if (req.method !== "POST") return res.status(405).json({ error: "Use POST." });
@@ -89,9 +69,11 @@ export default async function handler(req, res) {
   }
   if (image.length > MAX_IMAGE_CHARS) return res.status(413).json({ error: "That photo is too large." });
 
-  const visitor = String(req.headers["x-forwarded-for"] || "").split(",")[0].trim() || "unknown";
-  if (!allow(visitor)) {
+  if (!(await underLimit("scan", clientIp(req), PER_VISITOR_PER_DAY))) {
     return res.status(429).json({ error: "You've used today's photo scans. You can still type your ingredients." });
+  }
+  if (!(await underLimit("scan", "site", SITE_PER_DAY))) {
+    return res.status(429).json({ error: "The photo scanner is resting for today. You can still type your ingredients." });
   }
 
   try {
