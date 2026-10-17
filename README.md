@@ -32,7 +32,7 @@ Untick "I have the basics" (salt, pepper, oil, butter, flour, sugar, water) to c
 - **Photos** are shrunk in your browser, sent once to an AI vision service to identify ingredients, and never stored. Requests go only to providers that don't keep or train on data.
 - **Recipe searches** send only ingredient names to [TheMealDB](https://www.themealdb.com).
 - **Your ingredient list** is remembered in your own browser and nowhere else.
-- **Usage counts:** Cook This counts visits, searches, recipe opens, and store clicks, plus which ingredients people have and need, so we know what's working. No names, emails, IP addresses, or cookies are kept; a random number in your browser lets us count daily visitors without knowing who anyone is.
+- **Usage counts:** Cook This counts visits, searches, recipe opens, and store clicks, plus which ingredients people have and need, so we know what's working, and Vercel Web Analytics counts page views and where visitors come from, also without cookies. No names, emails, IP addresses, or cookies are kept; a random number in your browser lets us count daily visitors without knowing who anyone is.
 - **Kroger sign-in** happens on Kroger's own page. Cook This only gets permission to add to your cart, and that permission stays in a cookie only our server can read.
 - **Saved recipes** stay in your browser. Only if you choose to sign in are they also kept in our database, alongside your email address, so they can follow you to other devices. Each person can read only their own.
 
