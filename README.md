@@ -23,11 +23,11 @@
 3. **Tap What can I make?** Recipes are ranked by how close you are to cooking them: how many of your ingredients each one uses, and how few you'd need to buy.
 4. **Open a recipe** to see what you have (✓), the basics you have (•), and what you'd need (+), with numbered steps and a video when there is one.
 5. **Get what's missing.** Tap **Shop ingredients** for an Instacart page with everything you need, or **Add to my QFC cart** to sign in to your Kroger account and fill your cart. Each item also links to a search for it at Instacart, Amazon Fresh, QFC, and Safeway, and **Copy list** copies them all for your own shopping app.
-6. **Save** recipes you like with the **Save** button under the recipe's name. They appear under **Your saved recipes**, one tap away at the top right, with no account needed. To see them on another device too, enter your email there and open the sign-in link it sends.
+6. **Save** recipes you like with the **Save** button under the recipe's name. They appear under **Saved** at the top right, with no account needed. To see them on another device too, enter your email there and open the sign-in link it sends.
 7. **Print** a clean copy of the recipe: just the photo, ingredients, and steps.
 8. **Subscribe to NYT Cooking?** The link at the bottom of the page searches New York Times Cooking for the ingredients on your list.
 
-Untick "I have the basics" (salt, pepper, oil, butter, flour, sugar, water) to count those as missing too.
+Cook This assumes you have the basics (salt, pepper, oil, butter, flour, sugar, water). If you don't, tap **Count them as missing** under any recipe's ingredients; it's remembered. **How it works** and **Where your data goes**, at the top right, explain the rest.
 
 ## Privacy
 
