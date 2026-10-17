@@ -22,17 +22,18 @@
   </head>
   <body>
     <main class="page">
-      <a href="#saved" class="saved-link" id="saved-link" hidden>
-        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>
-        Your saved recipes <span id="saved-link-count"></span>
-      </a>
+      <nav class="topnav" aria-label="About Cook This">
+        <button type="button" class="topnav-link" data-panel="how">How it works</button>
+        <button type="button" class="topnav-link" data-panel="data">Where your data goes</button>
+        <button type="button" class="saved-link" id="saved-link" data-panel="saved" hidden><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>Saved <span id="saved-link-count"></span></button>
+      </nav>
       <header class="masthead">
         <h1 class="title">Cook This</h1>
         <p class="lede">Let's make something delicious with what's already in your kitchen.</p>
       </header>
 
       <form id="pantry-form" class="pantry" autocomplete="off">
-        <label for="ingredient" class="box-label">What ingredients do you have?</label>
+        <label for="ingredient" class="sr-only">What ingredients do you have?</label>
         <div class="box" id="box">
           <ul class="chips" id="chips" aria-label="Your ingredients"></ul>
           <button type="button" class="clear-all" id="clear-all" hidden>Clear all</button>
@@ -44,7 +45,7 @@
             aria-expanded="false"
             aria-controls="suggestions"
             aria-autocomplete="list"
-            placeholder="Add an ingredient — chicken, rice, lemon…"
+            placeholder="What ingredients do you have? Chicken, rice, lemon…"
             enterkeyhint="enter"
           />
           <button type="button" class="scan-btn" id="scan-btn" aria-label="Find ingredients in a photo" title="Find ingredients in a photo">
@@ -80,33 +81,20 @@
           <span class="try-label">Try:</span>
         </div>
 
-        <div class="prefs">
-          <button type="button" class="pref" id="veg" aria-pressed="false">
-            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19c0-8 5-13 14-14-1 9-6 14-14 14z"/><path d="M5 19l7-7"/></svg>
-            Vegetarian
-          </button>
-          <button type="button" class="pref" id="surprise">
-            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.7L18.5 9l-4.7 1.8L12 15.5l-1.8-4.7L5.5 9l4.7-1.3z"/><path d="M18.5 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/></svg>
-            Surprise me
-          </button>
-        </div>
-
         <div class="controls">
-          <label class="basics">
-            <input type="checkbox" id="basics" checked />
-            <span>I have the basics <span class="muted">salt, pepper, oil, butter, flour, sugar, water</span></span>
-          </label>
+          <div class="prefs">
+            <button type="button" class="pref" id="veg" aria-pressed="false">
+              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19c0-8 5-13 14-14-1 9-6 14-14 14z"/><path d="M5 19l7-7"/></svg>
+              Vegetarian
+            </button>
+            <button type="button" class="pref" id="surprise">
+              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.7L18.5 9l-4.7 1.8L12 15.5l-1.8-4.7L5.5 9l4.7-1.3z"/><path d="M18.5 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/></svg>
+              Surprise me
+            </button>
+          </div>
           <button type="submit" class="cook" id="cook">What can I make? <span aria-hidden="true">→</span></button>
         </div>
       </form>
-
-      <section id="saved" class="saved" aria-label="Saved recipes" hidden>
-        <details>
-          <summary>Your saved recipes <span id="saved-count"></span></summary>
-          <div class="results saved-list" id="saved-list"></div>
-          <div class="sync" id="sync"></div>
-        </details>
-      </section>
 
       <p id="status" class="status" role="status" aria-live="polite"></p>
       <section id="results" class="results" aria-label="Recipes"></section>
@@ -114,12 +102,42 @@
 
     <dialog id="recipe" class="recipe" aria-labelledby="recipe-title"></dialog>
 
+    <dialog id="saved" class="panel" aria-labelledby="saved-title">
+      <button type="button" class="close" data-close aria-label="Close">×</button>
+      <h2 id="saved-title">Your saved recipes <span id="saved-count"></span></h2>
+      <div class="results saved-list" id="saved-list"></div>
+      <div class="sync" id="sync"></div>
+    </dialog>
+
+    <dialog id="how" class="panel" aria-labelledby="how-title">
+      <button type="button" class="close" data-close aria-label="Close">×</button>
+      <h2 id="how-title">How it works</h2>
+      <ol class="panel-list">
+        <li><b>Tell it what you have.</b> Type a list any way it comes out ("turkey edamame heavy cream tofu" works), or snap a photo of your fridge or pantry.</li>
+        <li><b>See what you can make.</b> Recipes are ranked by how many of your ingredients they use and how few you'd need to buy. The ones you can make right now glow.</li>
+        <li><b>We assume you have the basics:</b> salt, pepper, oil, butter, flour, sugar, and water. They're marked • in each recipe, where you can count them as missing instead.</li>
+        <li><b>Get what's missing.</b> Each recipe lists what you'd need, with links to stores and a list you can copy.</li>
+      </ol>
+      <p class="panel-note">Recipes and photos come from <a href="https://www.themealdb.com" target="_blank" rel="noopener">TheMealDB</a>. Subscribe to New York Times Cooking? <a id="nyt" href="https://cooking.nytimes.com/" target="_blank" rel="noopener">Search NYT Cooking for your ingredients</a>.</p>
+    </dialog>
+
+    <dialog id="data" class="panel" aria-labelledby="data-title">
+      <button type="button" class="close" data-close aria-label="Close">×</button>
+      <h2 id="data-title">Where your data goes</h2>
+      <ul class="panel-list">
+        <li><b>Photos</b> are shrunk in your browser and sent once to an AI service to spot ingredients. They're never stored, and only go to providers that don't keep or train on what they're sent.</li>
+        <li><b>Searches</b> send only ingredient names to TheMealDB.</li>
+        <li><b>Your ingredient list and saved recipes</b> stay in this browser. If you sign in to see your saves on other devices, they're stored with your email address.</li>
+        <li><b>Usage counts.</b> We count visits, searches, and clicks to make Cook This better, without knowing who you are: no names, emails, or cookies.</li>
+        <li><b>Store links</b> go straight to the store you pick.</li>
+      </ul>
+    </dialog>
+
     <footer class="footer">
       <span class="maker">
-        <img src="icons/tandem-works.png" alt="" width="36" height="48" />
+        <img src="icons/tandem-works.png" alt="" width="24" height="32" />
         <span>Tandem Works</span>
       </span>
-      <p>Photos are sent to an AI service to identify ingredients and are not stored. That list of ingredients is matched with recipes from <a href="https://www.themealdb.com" target="_blank" rel="noopener">TheMealDB</a>. Saved recipes stay in your browser. If you sign in to see them on your other devices, they're stored with your email address. If you subscribe to New York Times Cooking, you can also <a id="nyt" href="https://cooking.nytimes.com/" target="_blank" rel="noopener">search NYT Cooking for your ingredients</a>. We count visits, searches, and clicks to make Cook This better, without knowing who you are.</p>
     </footer>
 
     <script src="app.js" type="module"></script>

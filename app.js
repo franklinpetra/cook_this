@@ -8,6 +8,7 @@ import { isSaved, onSavedChange, savedRecipes, sendSignInLink, signOut, startSyn
 const API = "https://www.themealdb.com/api/json/v1/1";
 const DETAILS_TO_FETCH = 16;
 const STORE_KEY = "cook-this-pantry";
+const BASICS_KEY = "cook-this-basics";
 const MAX_PANTRY = 15;
 const MAX_NAME = 40; // characters in one ingredient name
 
@@ -38,7 +39,6 @@ const chipsEl = $("chips");
 const suggestionsEl = $("suggestions");
 const statusEl = $("status");
 const resultsEl = $("results");
-const basicsEl = $("basics");
 const cookBtn = $("cook");
 const dialog = $("recipe");
 
@@ -55,6 +55,16 @@ let searchId = 0; // Only the newest search gets to show its results.
 // Optional buy buttons, switched on server-side (api/config.js): { instacart: true, kroger: "QFC" }.
 let services = {};
 let shown = null; // the recipe open in the dialog
+// Salt, pepper, oil and the like count as things you have, unless someone says otherwise in a recipe.
+let assumeBasics = loadBasics();
+
+function loadBasics() {
+  try {
+    return localStorage.getItem(BASICS_KEY) !== "no";
+  } catch {
+    return true;
+  }
+}
 
 // --- Small helpers -----------------------------------------------------------
 
@@ -156,7 +166,7 @@ function renderChips() {
         `<li class="chip">${escapeHtml(name)}<button type="button" data-remove="${i}" aria-label="Remove ${escapeHtml(name)}">×</button></li>`,
     )
     .join("");
-  input.placeholder = pantry.length ? "Add another…" : "Add an ingredient — chicken, rice, lemon…";
+  input.placeholder = pantry.length ? "Add another…" : "What ingredients do you have? Chicken, rice, lemon…";
   $("clear-all").hidden = pantry.length < 2;
   if (pantry.length < MAX_PANTRY && statusEl.textContent.startsWith("Your list holds")) statusEl.textContent = "";
   // Once someone has searched, the results follow the list as it changes.
@@ -425,7 +435,7 @@ function ingredientsOf(meal) {
 }
 
 function classify(meal) {
-  const basics = basicsEl.checked;
+  const basics = assumeBasics;
   return ingredientsOf(meal).map((ing) => ({
     ...ing,
     status: pantry.some((p) => covers(p, ing.name)) ? "have" : basics && isStaple(ing.name) ? "staple" : "need",
@@ -607,7 +617,30 @@ function haveLine(r) {
   return `You already have ${have} of the ${total} ingredients.`;
 }
 
-function openRecipe(r) {
+/** The note under Ingredients about salt, pepper and the like, with the switch to count them as missing. */
+function basicsNote(meal) {
+  if (!ingredientsOf(meal).some((i) => isStaple(i.name))) return "";
+  return assumeBasics
+    ? `<p class="basics-note">• Basics we assume you have: salt, pepper, oil, butter, flour, sugar, water. <button type="button" class="link-btn small" data-basics="no">Count them as missing</button></p>`
+    : `<p class="basics-note">Basics like salt, pepper, and oil are counted as missing. <button type="button" class="link-btn small" data-basics="yes">I have the basics</button></p>`;
+}
+
+/** Changes the basics setting everywhere: the results, their order, and the recipe that's open. */
+function setAssumeBasics(on) {
+  assumeBasics = on;
+  try {
+    localStorage.setItem(BASICS_KEY, on ? "yes" : "no");
+  } catch {}
+  lastResults = lastResults.map((r) => toResult(r.meal)).sort(byCookable);
+  if (lastResults.length) render();
+  if (shown) {
+    const top = dialog.scrollTop;
+    openRecipe(toResult(shown.meal), false);
+    dialog.scrollTop = top;
+  }
+}
+
+function openRecipe(r, count = true) {
   const m = r.meal;
   shown = r;
   const marks = { have: "✓", staple: "•", need: "+" };
@@ -624,6 +657,7 @@ function openRecipe(r) {
       <p class="save-row">${saveButton(m.idMeal)}</p>
       ${shopPanel(r.need)}
       <h3>Ingredients</h3>
+      ${basicsNote(m)}
       <ul class="ingredients">
         ${r.ings
           .map(
@@ -646,9 +680,9 @@ function openRecipe(r) {
       </div>
       <p class="print-only">Recipe from TheMealDB · found with Cook This, cookthis.link</p>
     </div>`;
-  dialog.showModal();
+  if (!dialog.open) dialog.showModal();
   dialog.scrollTop = 0;
-  track("open", { id: m.idMeal, need: r.need.map((n) => n.name) });
+  if (count) track("open", { id: m.idMeal, need: r.need.map((n) => n.name) });
 }
 
 // --- Ingredients from a photo -------------------------------------------------
@@ -803,18 +837,6 @@ form.addEventListener("submit", (e) => {
   cook();
 });
 
-basicsEl.addEventListener("change", () => {
-  if (cookBtn.disabled) return; // A search is running; it will use the new setting.
-  if (!lastResults.length) return;
-  lastResults = lastResults
-    .map((r) => {
-      const ings = classify(r.meal);
-      return { ...r, ings, have: ings.filter((i) => i.status === "have").length, need: ings.filter((i) => i.status === "need") };
-    })
-    .sort(byCookable);
-  render();
-});
-
 resultsEl.addEventListener("click", (e) => {
   const card = e.target.closest("[data-open]");
   if (card) openRecipe(lastResults[Number(card.dataset.open)]);
@@ -822,6 +844,8 @@ resultsEl.addEventListener("click", (e) => {
 
 dialog.addEventListener("click", async (e) => {
   if (e.target === dialog || e.target.closest("[data-close]")) return dialog.close();
+  const basics = e.target.closest("[data-basics]");
+  if (basics) return setAssumeBasics(basics.dataset.basics === "yes");
   if (e.target.closest("[data-print]")) {
     track("print");
     return window.print();
@@ -952,7 +976,6 @@ let syncNote = "";
 function renderSaved() {
   const list = savedRecipes();
   const email = syncedEmail();
-  savedEl.hidden = !list.length && !email;
   $("saved-count").textContent = list.length ? `(${list.length})` : "";
   $("saved-link").hidden = !list.length;
   $("saved-link-count").textContent = list.length ? `(${list.length})` : "";
@@ -992,8 +1015,11 @@ savedEl.addEventListener("click", async (e) => {
     const meal = await getJSON(`lookup.php?i=${encodeURIComponent(card.dataset.saved)}`)
       .then((d) => d.meals?.[0])
       .catch(() => null);
+    savedEl.close();
     if (meal) openRecipe(toResult(meal));
     else statusEl.textContent = "That recipe wouldn't open. Check your connection and try again.";
+  } else if (e.target === savedEl || e.target.closest("[data-close]")) {
+    savedEl.close();
   } else if (e.target.closest("[data-signout]")) {
     await signOut();
   }
@@ -1015,11 +1041,16 @@ savedEl.addEventListener("submit", async (e) => {
 
 onSavedChange(renderSaved);
 
-$("saved-link").addEventListener("click", (e) => {
-  e.preventDefault();
-  savedEl.querySelector("details").open = true;
-  savedEl.scrollIntoView({ behavior: scrollBehavior(), block: "start" });
+// How it works, Where your data goes, and Saved open as panels from the top right.
+document.querySelector(".topnav").addEventListener("click", (e) => {
+  const link = e.target.closest("[data-panel]");
+  if (link) $(link.dataset.panel).showModal();
 });
+for (const id of ["how", "data"]) {
+  $(id).addEventListener("click", (e) => {
+    if (e.target === e.currentTarget || e.target.closest("[data-close]")) e.currentTarget.close();
+  });
+}
 
 $("veg").addEventListener("click", (e) => {
   vegOnly = !vegOnly;

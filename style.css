@@ -80,8 +80,7 @@ body {
 /* Masthead ------------------------------------------------------------- */
 
 .masthead {
-  text-align: center;
-  margin-bottom: 40px;
+  margin-bottom: 36px;
 }
 
 .title {
@@ -95,7 +94,7 @@ body {
 }
 
 .lede {
-  margin: 0 auto;
+  margin: 0;
   max-width: 30rem;
   text-wrap: balance;
   font-size: 1.08rem;
@@ -105,8 +104,7 @@ body {
 /* The pantry box --------------------------------------------------------- */
 
 .pantry {
-  max-width: 680px;
-  margin: 0 auto;
+  max-width: 720px;
 }
 
 .box {
@@ -145,9 +143,9 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 2px;
-  padding: 5px 4px 5px 14px;
+  padding: 2px 3px 2px 11px;
   border-radius: 999px;
-  font-size: 0.92rem;
+  font-size: 0.8rem;
   font-weight: 500;
   background: var(--accent-tint);
   color: var(--accent-deep);
@@ -158,7 +156,7 @@ body {
   border: 0;
   background: transparent;
   font: inherit;
-  font-size: 1rem;
+  font-size: 0.95rem;
   line-height: 1;
   width: 24px;
   height: 24px;
@@ -230,8 +228,7 @@ body {
   flex-wrap: wrap;
   gap: 6px;
   align-items: center;
-  justify-content: center;
-  margin: 18px 0 8px;
+  margin: 16px 0 8px;
 }
 
 .try-label {
@@ -245,8 +242,8 @@ body {
   background: transparent;
   color: var(--ink-soft);
   font: inherit;
-  font-size: 0.85rem;
-  padding: 4px 13px;
+  font-size: 0.78rem;
+  padding: 3px 11px;
   border-radius: 999px;
   cursor: pointer;
   transition: border-color 0.15s, color 0.15s, background 0.15s;
@@ -269,28 +266,8 @@ body {
   margin-top: 18px;
 }
 
-.basics {
-  display: flex;
-  gap: 10px;
-  align-items: flex-start;
-  font-size: 0.87rem;
-  font-weight: 500;
-  cursor: pointer;
-  flex: 1 1 18rem;
-}
 
-.basics input {
-  width: 18px;
-  height: 18px;
-  margin-top: 2px;
-  accent-color: var(--sage);
-}
 
-.basics .muted {
-  display: block;
-  font-weight: 400;
-  font-size: 0.8rem;
-}
 
 .cook {
   font: inherit;
@@ -329,7 +306,6 @@ a:focus-visible {
 /* Results --------------------------------------------------------------- */
 
 .status {
-  text-align: center;
   font-family: var(--serif);
   font-style: italic;
   font-size: 1.15rem;
@@ -672,26 +648,18 @@ a:focus-visible {
 }
 
 .footer {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  font-size: 0.82rem;
-  color: var(--muted);
-  padding: 32px 24px 40px;
-  border-top: 1px solid var(--line);
-  margin-top: 48px;
-}
-.footer p {
-  margin: 0;
-  max-width: 760px;
+  width: 100%;
+  max-width: 1080px;
+  margin: 48px auto 0;
+  padding: 24px 16px 32px;
 }
 .footer .maker {
   flex: none;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  font-size: 0.7rem;
+  gap: 3px;
+  font-size: 0.62rem;
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -699,7 +667,7 @@ a:focus-visible {
   text-decoration: none;
 }
 .footer .maker img {
-  width: 36px;
+  width: 24px;
   height: auto;
 }
 
@@ -716,9 +684,6 @@ a:focus-visible {
   .controls {
     flex-direction: column;
     align-items: stretch;
-  }
-  .basics {
-    flex: none;
   }
   .cook {
     width: 100%;
@@ -1252,9 +1217,6 @@ a:focus-visible {
 
 /* Saved recipes, one tap away at the top right. */
 .saved-link {
-  position: absolute;
-  top: 20px;
-  right: 16px;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -1274,23 +1236,14 @@ a:focus-visible {
 }
 
 /* "What ingredients do you have?" above the box. */
-.box-label {
-  display: block;
-  text-align: center;
-  font-family: var(--serif);
-  font-size: 1.12rem;
-  color: var(--ink);
-  margin: 0 0 12px;
-}
 
 /* The invitation to use a photo: a clear button, not a link to hunt for. */
 .photo-hint {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: center;
   gap: 8px 12px;
-  margin: 18px 0 0;
+  margin: 16px 0 0;
 }
 .photo-ask {
   font-family: var(--serif);
@@ -1335,15 +1288,13 @@ a:focus-visible {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  justify-content: center;
-  margin: 10px 0 0;
 }
 .pref {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   font: inherit;
-  font-size: 0.85rem;
+  font-size: 0.78rem;
   color: var(--ink-soft);
   background: transparent;
   border: 1px solid var(--line-strong);
@@ -1385,11 +1336,11 @@ a:focus-visible {
 }
 
 @media (max-width: 560px) {
-  .saved-link {
-    top: 10px;
-    right: 8px;
+  /* On phones the photo is the quickest way in, so it's the biggest thing after the box, and the box's own
+     camera button would only repeat it. */
+  .scan-btn {
+    display: none;
   }
-  /* On phones the photo is the quickest way in, so it's the biggest thing after the box. */
   .photo-ask {
     display: none;
   }
@@ -1420,10 +1371,113 @@ a:focus-visible {
   overflow-wrap: anywhere;
 }
 
+
+/* Header links: How it works, Where your data goes, Saved ---------------------- */
+.topnav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 4px 6px;
+  margin: -40px 0 28px;
+}
+.topnav-link {
+  font: inherit;
+  font-size: 0.86rem;
+  color: var(--ink-soft);
+  background: none;
+  border: 0;
+  padding: 6px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+.topnav-link:hover {
+  color: var(--accent);
+  background: var(--surface);
+}
+.saved-link {
+  font: inherit;
+  font-size: 0.86rem;
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  cursor: pointer;
+}
+
+/* Panels: the same kind of window as a recipe, for short reading. */
+.panel {
+  width: min(560px, calc(100vw - 24px));
+  max-height: calc(100vh - 40px);
+  border: 0;
+  border-radius: 20px;
+  padding: 32px 32px 28px;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 30px 80px rgb(13 38 51 / 0.3);
+}
+.panel::backdrop {
+  background: rgb(13 38 51 / 0.5);
+  backdrop-filter: blur(3px);
+}
+.panel[open] {
+  animation: fade-up 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.panel h2 {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 1.4rem;
+  margin: 0 48px 16px 0;
+}
+.panel h2 span {
+  color: var(--muted);
+}
+.panel-list {
+  margin: 0;
+  padding-left: 1.2em;
+  display: grid;
+  gap: 10px;
+  color: var(--ink-soft);
+  line-height: 1.5;
+}
+.panel-list b {
+  color: var(--ink);
+  font-weight: 600;
+}
+.panel-note {
+  margin: 18px 0 0;
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+}
+.panel a {
+  color: var(--accent);
+}
+.panel .saved-list {
+  margin-top: 4px;
+}
+
+/* The basics note under a recipe's ingredients. */
+.basics-note {
+  margin: -6px 0 12px;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+
 @media (max-width: 560px) {
-  /* The footer's note gets the full width under the logo on phones. */
-  .footer {
-    flex-direction: column;
-    text-align: center;
+  .topnav {
+    justify-content: flex-start;
+    margin: -32px -10px 20px;
+  }
+  .topnav-link,
+  .saved-link {
+    font-size: 0.8rem;
+  }
+  .panel {
+    padding: 26px 20px 22px;
+  }
+}
+
+@media print {
+  .topnav {
+    display: none;
   }
 }
