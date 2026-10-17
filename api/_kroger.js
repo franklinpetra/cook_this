@@ -9,7 +9,7 @@ export const CLIENT_ID = () => String(process.env.KROGER_CLIENT_ID || "").trim()
 const SECRET = () => String(process.env.KROGER_CLIENT_SECRET || "").trim();
 export const REDIRECT_URI = () => process.env.KROGER_REDIRECT_URI || "https://cookthis.link/api/kroger/callback";
 // Which store's sign-in page and cart people see. A branded version for another Kroger banner changes this.
-export const BANNER = () => process.env.KROGER_BANNER || "qfc";
+export const BANNER = () => String(process.env.KROGER_BANNER || "qfc").trim().toLowerCase();
 
 export const krogerReady = () => Boolean(CLIENT_ID() && SECRET());
 
@@ -18,7 +18,12 @@ const COOKIE_DAYS = 30;
 
 export function readCookie(req, name) {
   const match = String(req.headers.cookie || "").match(new RegExp(`(?:^|;\\s*)${name}=([^;]*)`));
-  return match ? decodeURIComponent(match[1]) : "";
+  if (!match) return "";
+  try {
+    return decodeURIComponent(match[1]);
+  } catch {
+    return ""; // A mangled cookie counts as no cookie.
+  }
 }
 
 export function setCookie(res, name, value, maxAgeSeconds) {
@@ -37,10 +42,12 @@ export function readTokens(req) {
   }
 }
 
-export function saveTokens(res, token) {
-  const value = Buffer.from(
-    JSON.stringify({ access: token.access_token, refresh: token.refresh_token, expires: Date.now() + (token.expires_in - 60) * 1000 }),
-  ).toString("base64url");
+/** Stores fresh tokens; a refresh that doesn't send a new refresh token keeps the previous one. */
+export function saveTokens(res, token, previousRefresh = "") {
+  const refresh = token.refresh_token || previousRefresh;
+  const value = Buffer.from(JSON.stringify({ access: token.access_token, refresh, expires: Date.now() + (token.expires_in - 60) * 1000 })).toString(
+    "base64url",
+  );
   setCookie(res, COOKIE, value, COOKIE_DAYS * 86400);
 }
 

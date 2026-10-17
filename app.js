@@ -9,14 +9,21 @@ const API = "https://www.themealdb.com/api/json/v1/1";
 const DETAILS_TO_FETCH = 16;
 const STORE_KEY = "cook-this-pantry";
 const MAX_PANTRY = 15;
+const MAX_NAME = 40; // characters in one ingredient name
 
 // Words that make an ingredient a different thing ("Chicken Stock" isn't chicken, "Peanut Butter" isn't butter).
 const NOT_THE_SAME = [
   "spring", "stock", "powder", "sauce", "paste", "oil", "juice", "extract", "seasoning", "cube", "gravy",
   "peanut", "almond", "coconut", "soy", "oat", "ice", "vinegar", "wine", "noodle", "flour", "flake", "milk",
   "cream", "bread", "tortilla", "syrup", "bean", "condensed", "evaporated", "soya", "chocolate", "vermicelli",
-  "krispy", "paper", "ketchup", "puree", "sun", "salt", "liver", "palm",
+  "krispy", "paper", "ketchup", "puree", "sun", "salt", "liver", "palm", "snap", "chestnut", "starch", "ale",
+  "salsa", "sweet", "plant", "roll",
 ];
+// Words that only narrow an ingredient down, so "Garlic Cloves" or "Red Onions" still count as a recipe's
+// plain "Garlic" or "Onion". Anything else ("Beef Tomatoes", "Peanut Butter") is a different food.
+const REFINES = new Set(
+  "red white yellow green orange purple brown black fresh baby large small medium whole chopped diced sliced minced grated shredded boneless skinless lean extra virgin unsalted salted plain organic free range clove thigh breast leg drumstick wing fillet cherry plum grape vine roma basmati jasmine long grain arborio".split(" "),
+);
 // Pepper the spice only covers other pepper spices, not "Red Pepper" (a bell pepper) or "Chilli Pepper".
 const PEPPER_SPICE = ["black", "white", "ground", "cracked", "freshly", "pepper"];
 // Fresh citrus gives you its own juice.
@@ -43,6 +50,7 @@ let lastResults = [];
 let vegOnly = false;
 let vegIds = null;
 let rerun = null;
+let searched = false;
 let searchId = 0; // Only the newest search gets to show its results.
 // Optional buy buttons, switched on server-side (api/config.js): { instacart: true, kroger: "QFC" }.
 let services = {};
@@ -50,15 +58,32 @@ let shown = null; // the recipe open in the dialog
 
 // --- Small helpers -----------------------------------------------------------
 
-const norm = (s) => s.toLowerCase().trim();
+// Accents don't matter when comparing names: "gruyere" finds "Gruyère".
+const norm = (s) =>
+  s
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
 const words = (s) => norm(s).split(/[\s-]+/).filter(Boolean);
 const singular = (w) => (w.endsWith("oes") ? w.slice(0, -2) : w.endsWith("ies") ? `${w.slice(0, -3)}y` : w.endsWith("s") && !w.endsWith("ss") ? w.slice(0, -1) : w);
+// Smooth scrolling only for people who haven't asked for less motion.
+const scrollBehavior = () => (matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth");
+/** Only web links from recipe data become links, never javascript: or other schemes. */
+const safeUrl = (u) => (/^https?:\/\//i.test(String(u || "")) ? String(u) : "");
 const escapeHtml = (s) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 
 function load() {
   try {
     const saved = JSON.parse(localStorage.getItem(STORE_KEY) || "[]");
-    return Array.isArray(saved) ? saved.filter((x) => typeof x === "string").slice(0, MAX_PANTRY) : [];
+    if (!Array.isArray(saved)) return [];
+    // Skip blanks, overlong entries and duplicates that an older version or a hand edit may have left.
+    const seen = new Set();
+    return saved
+      // Runs before the helpers below exist, so it lowercases on its own.
+      .filter((x) => typeof x === "string" && x.trim() && x.length <= MAX_NAME && !seen.has(x.trim().toLowerCase()) && seen.add(x.trim().toLowerCase()))
+      .map((x) => x.trim())
+      .slice(0, MAX_PANTRY);
   } catch {
     return [];
   }
@@ -96,15 +121,27 @@ function cachedJSON(path) {
   return fetched.get(path);
 }
 
-/** Does a recipe ingredient name count as one of yours? "Garlic" covers "Garlic Clove", not "Garlic Powder". */
+/**
+ * Does a recipe ingredient name count as one of yours? "Garlic" covers "Garlic Clove", not "Garlic Powder",
+ * and your "Garlic Cloves" or "Red Onions" cover a recipe's plain "Garlic" or "Onion".
+ */
 function covers(mine, theirs) {
   const a = words(mine).map(singular);
   const b = words(theirs).map(singular);
-  if (!a.every((w) => b.includes(w))) return false;
-  const extra = b.filter((w) => !a.includes(w));
-  if (a.length === 1 && a[0] === "pepper") return extra.every((w) => PEPPER_SPICE.includes(w));
-  if (a.length === 1 && SQUEEZABLE.includes(a[0]) && extra.length === 1 && extra[0] === "juice") return true;
-  return !extra.some((w) => NOT_THE_SAME.includes(w));
+  if (a.every((w) => b.includes(w))) {
+    const extra = b.filter((w) => !a.includes(w));
+    if (a.length === 1 && a[0] === "pepper") return extra.every((w) => PEPPER_SPICE.includes(w));
+    if (a.length === 1 && SQUEEZABLE.includes(a[0]) && extra.length === 1 && extra[0] === "juice") return true;
+    return !extra.some((w) => NOT_THE_SAME.includes(w));
+  }
+  if (b.every((w) => a.includes(w))) {
+    const extra = a.filter((w) => !b.includes(w));
+    if (b.length === 1 && b[0] === "pepper") return extra.every((w) => PEPPER_SPICE.includes(w));
+    // Egg whites alone don't make the whole eggs a recipe asks for.
+    if (b.length === 1 && b[0] === "egg" && extra.includes("white")) return false;
+    return extra.every((w) => REFINES.has(w));
+  }
+  return false;
 }
 
 const STAPLE = /^(salt|sea salt|table salt|water|sugar|caster sugar|granulated sugar|brown sugar|butter|unsalted butter|flour|plain flour|all purpose flour|pepper|black pepper|white pepper|ground pepper|olive oil|vegetable oil|oil|sunflower oil|canola oil|extra virgin olive oil|salt and pepper)$/;
@@ -121,10 +158,14 @@ function renderChips() {
     .join("");
   input.placeholder = pantry.length ? "Add another…" : "Add an ingredient — chicken, rice, lemon…";
   $("clear-all").hidden = pantry.length < 2;
-  // Once recipes are showing, they follow the list as it changes.
-  if (lastResults.length) {
+  if (pantry.length < MAX_PANTRY && statusEl.textContent.startsWith("Your list holds")) statusEl.textContent = "";
+  // Once someone has searched, the results follow the list as it changes.
+  if (searched) {
     clearTimeout(rerun);
-    rerun = setTimeout(cook, 700);
+    rerun = setTimeout(() => {
+      rerun = null;
+      cook();
+    }, 700);
   }
   // The footer's NYT Cooking link searches for what's on the list, for people who subscribe.
   $("nyt").href = pantry.length ? `https://cooking.nytimes.com/search?q=${encodeURIComponent(pantry.join(" "))}` : "https://cooking.nytimes.com/";
@@ -147,43 +188,78 @@ const SAME_AS = {
   "all-purpose flour": "Plain Flour", "all purpose flour": "Plain Flour", "bell pepper": "Red Pepper",
   "bell peppers": "Red Pepper", "baking soda": "Bicarbonate Of Soda", "romaine": "Lettuce",
   "canned tomatoes": "Chopped Tomatoes", "chicken breasts": "Chicken Breast", "sweet potatoes": "Sweet Potatoes",
+  "green onion": "Spring Onions", scallion: "Spring Onions", peppers: "Red Pepper",
+  "5 spice": "Five Spice Powder", "five spice": "Five Spice Powder", "chinese five spice": "Five Spice Powder",
 };
+/** The British name for an American one, or null. (A Map-style check, so "constructor" is just a word.) */
+const sameAs = (t) => (Object.hasOwn(SAME_AS, t) ? SAME_AS[t] : null);
+/** "jalapeño" → "Jalapeño", "crème fraîche" → "Crème Fraîche". */
+const titleCase = (s) => s.replace(/(^|[\s-])(\p{L})/gu, (_, before, letter) => before + letter.toUpperCase());
 
 /** The best real ingredient name for what was typed, so searches use TheMealDB's own names. */
 function canonical(text) {
   const t = norm(text);
   if (!t) return null;
-  if (SAME_AS[t]) return SAME_AS[t];
+  if (sameAs(t)) return sameAs(t);
   const exact = allIngredients.find((n) => norm(n) === t || singular(norm(n)) === singular(t));
   if (exact) return exact;
-  // Only when it's unambiguous: "corn" could be Cornflour or Corn Tortillas, so it stays "Corn".
-  const starts = allIngredients.filter((n) => norm(n).startsWith(t));
+  // "parmesan" → "Parmesan Cheese", only when it's unambiguous and the added words don't make it a different
+  // thing: "corn" could be Corn Tortillas or Corn Flour, and "chili" isn't Chili Powder.
+  const starts = allIngredients.filter((n) => {
+    const name = norm(n);
+    return name.startsWith(`${t} `) && !words(name.slice(t.length)).map(singular).some((w) => NOT_THE_SAME.includes(w));
+  });
   if (starts.length === 1) return starts[0];
-  // "Baby Carrots" → "Carrots": the longest known name whose words are all in what was typed.
+  // "Baby Carrots" → "Carrots": the longest known name whose words are all in what was typed, unless the
+  // leftover words make it something else ("tomato paste" isn't Tomatoes).
   const typed = words(t).map(singular);
   const inside = allIngredients
-    .filter((n) => words(n).map(singular).every((w) => typed.includes(w)))
+    .filter((n) => {
+      const name = words(n).map(singular);
+      return name.every((w) => typed.includes(w)) && !typed.some((w) => !name.includes(w) && NOT_THE_SAME.includes(w));
+    })
     .sort((a, b) => b.length - a.length)[0];
   if (inside) return inside;
-  return text.trim().replace(/\b\w/g, (c) => c.toUpperCase());
+  return titleCase(text.trim().slice(0, MAX_NAME));
 }
 
 /** True when TheMealDB (or our American-name table) knows this exact ingredient. */
 function known(text) {
   const t = norm(text);
-  return Boolean(SAME_AS[t] || allIngredients.some((n) => norm(n) === t || singular(norm(n)) === singular(t)));
+  return Boolean(sameAs(t) || allIngredients.some((n) => norm(n) === t || singular(norm(n)) === singular(t)));
 }
 
 // Commas, semicolons, new lines and slashes separate items in a typed or pasted list; so do "&", "and" and
 // "plus", unless they are part of a known name.
-const SEPARATORS = /\s*[,;\n\/]\s*/;
+const SEPARATORS = /\s*(?:[,;\n]|(?<!\d)\/(?!\d))\s*/;
 const JOINERS = /\s*(?:[&+]|\band\b|\bplus\b)\s*/i;
 
 // Words that describe the next item ("fresh limes"), and words that finish the one before ("curry paste").
 const DESCRIBES = new Set(
-  "fresh frozen dried canned tinned raw cooked leftover ripe baby large small big organic chopped sliced diced minced grated shredded smoked boneless skinless whole lean extra virgin".split(" "),
+  "fresh frozen dried canned tinned raw cooked leftover ripe baby large small big organic chopped sliced diced minced grated shredded smoked boneless skinless whole lean extra virgin white hot sweet plain cooking green red yellow orange wild light dark unsalted salted ground greek skim natural".split(" "),
 );
 const FORMS = new Set("paste sauce powder leaves leaf seeds flakes stock broth oil juice zest puree cubes fillets fillet breasts breast thighs wings mince".split(" "));
+
+// Quantities and units at the start of an item: "2 lbs chicken", "1/2 cup rice", "a can of beans", "200ml milk".
+// A unit only counts after an amount, so "pound cake" and "cloves" (the spice) stay food.
+const AMOUNT = /^(?:a|an|[\d\u00bc-\u00be\u2150-\u215e.,\/x-]+(?:ml|l|g|kg|lbs?|oz)?\.?)$/i;
+const UNIT = /^(?:cups?|tbsps?|tbs|tablespoons?|tsps?|teaspoons?|lbs?|pounds?|oz|ounces?|g|grams?|kg|ml|liters?|litres?|cans?|tins?|jars?|packages?|pkgs?|packs?|bags?|box(?:es)?|bunch(?:es)?|heads?|handfuls?|pinch(?:es)?|cloves?|slices?|sticks?|dozen|of)\.?$/i;
+
+/** One typed item without its list bullet, number, quantity, or unit: "- 2 cups rice" → "rice". */
+function tidy(part) {
+  const text = part
+    .replace(/\([^)]*\)/g, " ") // "1 (14 oz) can tomatoes"
+    .replace(/^\s*(?:[-–—•*·]+|\d+[.)](?!\d))\s*/, "")
+    .replace(/^\s*(juice|zest)\s+of\s+(?:\d+\s+|an?\s+)?(.+)$/i, "$2 $1"); // "juice of 1 lemon" → "lemon juice"
+  const w = text.split(/\s+/).filter(Boolean);
+  let measured = false;
+  while (w.length > 1) {
+    if (AMOUNT.test(w[0])) measured = true;
+    else if (!measured || !UNIT.test(w[0])) break;
+    w.shift();
+  }
+  return w.join(" ");
+}
 
 /** Letters you'd have to change to turn one word into another. */
 function distance(a, b) {
@@ -217,10 +293,17 @@ function corrected(word) {
  * word we don't recognise becomes its own item rather than being lost.
  */
 function splitIngredients(text) {
-  const parts = text.split(SEPARATORS).flatMap((part) => (known(part) ? [part] : part.split(JOINERS)));
+  const parts = text
+    .replace(/\band\s*\/\s*or\b/gi, ",") // "milk and/or cream"
+    .split(SEPARATORS)
+    .flatMap((part) => (known(part) ? [part] : part.split(JOINERS)))
+    .map((part) => (known(part) ? part : tidy(part)));
   return parts.flatMap((part) => {
     const w = part.split(/\s+/).filter(Boolean);
-    if (w.length < 2 || known(part)) return w.length ? [part.trim()] : [];
+    if (!w.length || /^[^\p{L}]+$/u.test(part)) return []; // Bullets, numbers and stray symbols alone aren't food.
+    if (!known(part) && w.every((x) => DESCRIBES.has(norm(x)))) return []; // Nor is "diced" in "1 onion, diced".
+    if (known(part)) return [part.trim()];
+    if (w.length === 1) return [corrected(part) ?? part.trim()]; // "chiken" → Chicken
     // Longest known name at each position, up to three words.
     const found = [];
     let lead = [];
@@ -324,7 +407,7 @@ function move(delta) {
 
 /** The recipe ids that use one of your ingredients, including close variants ("Chicken Thighs"). */
 async function mealsFor(name) {
-  const variants = [name, ...allIngredients.filter((n) => n !== name && covers(name, n)).slice(0, 5)];
+  const variants = [name, ...allIngredients.filter((n) => n !== name && covers(name, n)).slice(0, 8)];
   const lists = await Promise.all(variants.map((v) => cachedJSON(`filter.php?i=${encodeURIComponent(v)}`).catch(() => ({ meals: null, failed: true }))));
   if (lists.every((l) => l.failed)) throw new Error(`No answer for ${name}`);
   const meals = new Map();
@@ -357,6 +440,8 @@ function toResult(meal) {
 
 async function cook() {
   if (!pantry.length) {
+    ++searchId; // Cancels a search still running for the old list.
+    cookBtn.disabled = false;
     lastResults = [];
     resultsEl.innerHTML = "";
     statusEl.textContent = "Add at least one thing from your kitchen first.";
@@ -364,6 +449,7 @@ async function cook() {
     return;
   }
   const id = ++searchId;
+  searched = true;
   cookBtn.disabled = true;
   track("search", { have: pantry });
   resultsEl.innerHTML = "";
@@ -408,6 +494,7 @@ async function cook() {
     render();
   } catch (err) {
     if (id !== searchId) return;
+    lastResults = []; // The page shows no results now, so nothing (like Surprise me) should use the old ones.
     statusEl.textContent = "The recipe box is busy. Give it a few seconds and try again.";
     console.error(err);
   } finally {
@@ -417,9 +504,13 @@ async function cook() {
 
 /** The ids of TheMealDB's vegetarian and vegan recipes, looked up once. */
 function vegetarianIds() {
-  vegIds ??= Promise.all(["Vegetarian", "Vegan"].map((c) => cachedJSON(`filter.php?c=${c}`).catch(() => ({ meals: [] })))).then(
-    (lists) => new Set(lists.flatMap((l) => (l.meals ?? []).map((m) => m.idMeal))),
-  );
+  // A failed lookup isn't kept, so the next search tries again instead of finding nothing forever.
+  vegIds ??= Promise.all(["Vegetarian", "Vegan"].map((c) => cachedJSON(`filter.php?c=${c}`)))
+    .then((lists) => new Set(lists.flatMap((l) => (l.meals ?? []).map((m) => m.idMeal))))
+    .catch((err) => {
+      vegIds = null;
+      throw err;
+    });
   return vegIds;
 }
 
@@ -435,7 +526,7 @@ function render() {
         ? `<span class="badge need" title="${escapeHtml(r.need.map((n) => n.name).join(", "))}">${r.need.length} to buy</span>`
         : `<span class="badge ready">Ready to cook</span>`;
       return `<button type="button" class="card${r.need.length ? "" : " is-ready"}" data-open="${i}" style="animation-delay:${Math.min(i, 10) * 40}ms">
-        <img src="${m.strMealThumb}/medium" alt="" loading="lazy" />
+        ${photo(m.strMealThumb, "/medium", 'loading="lazy"')}
         <span class="card-body">
           <span class="card-title">${escapeHtml(m.strMeal)}</span>
           <span class="meta">${escapeHtml([m.strArea, m.strCategory].filter(Boolean).join(" · "))}</span>
@@ -444,6 +535,12 @@ function render() {
       </button>`;
     })
     .join("");
+}
+
+/** A recipe photo, or nothing if the recipe has none. */
+function photo(url, size = "", extra = "") {
+  const src = safeUrl(url);
+  return src ? `<img src="${escapeHtml(src + size)}" alt="" ${extra} />` : "";
 }
 
 /** Closest to cookable first: each of yours it uses counts double, each thing you'd buy counts against it. */
@@ -455,11 +552,12 @@ function byCookable(a, b) {
 function steps(text) {
   return (text || "")
     .split(/\r?\n+/)
-    .map((s) => s.replace(/^\s*(step\s*\d+[:.)]?|\d+[.)])\s*/i, "").trim())
+    .map((s) => s.replace(/^\s*(?:step\s*\d+|\d+[.)])\s*[:.)\-–—]*\s*/i, "").trim())
     .filter((s) => s.length > 2)
     .map((s) => {
       const bare = s.replace(/^[-–—•*\s]+|[:\s]+$/g, "");
-      const heading = bare.length < 60 && bare === bare.toUpperCase() && /[A-Z]/.test(bare);
+      // A short all-caps line is a section label, but not a shouted instruction ("PREHEAT TO 350F.").
+      const heading = bare.length < 60 && bare === bare.toUpperCase() && /[A-Z]/.test(bare) && !/[\d.!?]$/.test(bare);
       return heading ? { heading: true, text: bare.charAt(0) + bare.slice(1).toLowerCase() } : { heading: false, text: s };
     });
 }
@@ -480,7 +578,7 @@ function shopPanel(need) {
           .map(
             (name) => `<li>
               <span class="shop-item">${escapeHtml(name)}</span>
-              <span class="shop-links">${STORES.map((s) => `<a href="${escapeHtml(s.url(name))}" target="_blank" rel="noopener" data-store="${escapeHtml(s.name)}">${s.name}</a>`).join("")}</span>
+              <span class="shop-links">${STORES.map((s) => `<a href="${escapeHtml(s.url(name))}" target="_blank" rel="noopener" data-store="${escapeHtml(s.name)}" aria-label="${escapeHtml(`${name} at ${s.name} (opens in a new tab)`)}">${s.name}</a>`).join("")}</span>
             </li>`,
           )
           .join("")}
@@ -516,7 +614,7 @@ function openRecipe(r) {
   const labels = { have: "You have this", staple: "A basic you have", need: "You'd need this" };
   dialog.innerHTML = `
     <div class="recipe-hero">
-      <img src="${m.strMealThumb}" alt="" />
+      ${photo(m.strMealThumb)}
       <button type="button" class="close" data-close aria-label="Close">×</button>
     </div>
     <div class="recipe-body">
@@ -530,7 +628,7 @@ function openRecipe(r) {
         ${r.ings
           .map(
             (i) =>
-              `<li class="${i.status}"><span class="mark" aria-label="${labels[i.status]}">${marks[i.status]}</span><span>${escapeHtml(i.name)} <span class="measure">${escapeHtml(i.measure)}</span></span></li>`,
+              `<li class="${i.status}"><span class="mark" aria-hidden="true">${marks[i.status]}</span><span class="sr-only">${labels[i.status]}: </span><span>${escapeHtml(i.name)} <span class="measure">${escapeHtml(i.measure)}</span></span></li>`,
           )
           .join("")}
       </ul>
@@ -539,8 +637,8 @@ function openRecipe(r) {
         .map((s) => (s.heading ? `<li class="sub">${escapeHtml(s.text)}</li>` : `<li>${escapeHtml(s.text)}</li>`))
         .join("")}</ol>
       <div class="links">
-        ${m.strYoutube ? `<a href="${escapeHtml(m.strYoutube)}" target="_blank" rel="noopener" data-video>▶ Watch it made</a>` : ""}
-        ${m.strSource ? `<a href="${escapeHtml(m.strSource)}" target="_blank" rel="noopener">Original recipe</a>` : ""}
+        ${safeUrl(m.strYoutube) ? `<a href="${escapeHtml(safeUrl(m.strYoutube))}" target="_blank" rel="noopener" data-video>▶ Watch it made</a>` : ""}
+        ${safeUrl(m.strSource) ? `<a href="${escapeHtml(safeUrl(m.strSource))}" target="_blank" rel="noopener">Original recipe</a>` : ""}
         <button type="button" class="link-btn" data-print>
           <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 9V4h10v5M7 17H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2"/><path d="M7 14h10v6H7z"/></svg>
           Print
@@ -550,7 +648,7 @@ function openRecipe(r) {
     </div>`;
   dialog.showModal();
   dialog.scrollTop = 0;
-  track("open", { detail: m.strMeal, need: r.need.map((n) => n.name) });
+  track("open", { id: m.idMeal, need: r.need.map((n) => n.name) });
 }
 
 // --- Ingredients from a photo -------------------------------------------------
@@ -576,7 +674,7 @@ async function scan(file) {
   setScan("Looking for ingredients…");
   track("scan");
   scanEl.classList.add("busy");
-  scanEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  scanEl.scrollIntoView({ behavior: scrollBehavior(), block: "nearest" });
   try {
     const { scanPhoto } = await import("./scan.js");
     const found = (await scanPhoto(file)).map((f) => ({ ...f, name: canonical(f.name) }));
@@ -635,6 +733,7 @@ input.addEventListener("input", () => {
   showSuggestions();
 });
 input.addEventListener("keydown", (e) => {
+  if (e.isComposing || e.keyCode === 229) return; // Still composing (Japanese, Chinese, some phone keyboards).
   if (e.key === "ArrowDown") {
     e.preventDefault();
     move(1);
@@ -661,7 +760,9 @@ input.addEventListener("paste", (e) => {
   const text = e.clipboardData?.getData("text") ?? "";
   if (!/[,;\n]/.test(text)) return;
   e.preventDefault();
-  add(`${input.value} ${text}`);
+  // Pasted text goes where the cursor is, replacing any selection.
+  const value = input.value;
+  add(value.slice(0, input.selectionStart ?? value.length) + text + value.slice(input.selectionEnd ?? value.length));
 });
 
 suggestionsEl.addEventListener("mousedown", (e) => {
@@ -703,6 +804,7 @@ form.addEventListener("submit", (e) => {
 });
 
 basicsEl.addEventListener("change", () => {
+  if (cookBtn.disabled) return; // A search is running; it will use the new setting.
   if (!lastResults.length) return;
   lastResults = lastResults
     .map((r) => {
@@ -761,12 +863,13 @@ async function shopInstacart(r) {
   track("instacart");
   // Open the tab now, while the tap still counts as the reason, then point it at the page once it's ready.
   const tab = window.open("", "_blank");
+  if (tab) tab.opener = null; // The store's page can't reach back into Cook This.
   buyNote("Making your Instacart list…");
   try {
     const res = await fetch("api/instacart", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: r.meal.strMeal, image: r.meal.strMealThumb, items: r.need.map((n) => ({ name: n.name, measure: n.measure })) }),
+      body: JSON.stringify({ id: r.meal.idMeal, items: r.need.map((n) => n.name) }),
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok || !data.url) throw new Error(data.error || "Instacart isn't answering right now.");
@@ -780,12 +883,13 @@ async function shopInstacart(r) {
 }
 
 /** Adds the missing items to the shopper's Kroger-family cart, signing them in first if needed. */
-async function addToKroger(items, show = buyNote) {
+async function addToKroger(items, show = buyNote, justSignedIn = false) {
   track("kroger");
   show("Finding your ingredients at the store…");
   try {
     const res = await fetch("api/kroger/cart", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ items }) });
     const data = await res.json().catch(() => ({}));
+    if (data.signIn && justSignedIn) throw new Error("The store didn't accept the sign-in, so nothing was added to your cart.");
     if (data.signIn) {
       try {
         sessionStorage.setItem(PENDING_KEY, JSON.stringify(items));
@@ -828,7 +932,7 @@ function finishKrogerSignIn() {
     sessionStorage.removeItem(PENDING_KEY);
   } catch {}
   if (result !== "connected") return notice("Signing in to the store didn't finish, so nothing was added to your cart.");
-  if (items.length) addToKroger(items, notice);
+  if (items.length) addToKroger(items, notice, true);
 }
 
 // --- Saved recipes -------------------------------------------------------------
@@ -856,7 +960,7 @@ function renderSaved() {
     ? list
         .map(
           (r) => `<button type="button" class="card" data-saved="${escapeHtml(r.id)}">
-        <img src="${escapeHtml(r.thumb)}/medium" alt="" loading="lazy" />
+        ${photo(r.thumb, "/medium", 'loading="lazy"')}
         <span class="card-body">
           <span class="card-title">${escapeHtml(r.name)}</span>
           <span class="meta">${escapeHtml(r.meta || "")}</span>
@@ -914,7 +1018,7 @@ onSavedChange(renderSaved);
 $("saved-link").addEventListener("click", (e) => {
   e.preventDefault();
   savedEl.querySelector("details").open = true;
-  savedEl.scrollIntoView({ behavior: "smooth", block: "start" });
+  savedEl.scrollIntoView({ behavior: scrollBehavior(), block: "start" });
 });
 
 $("veg").addEventListener("click", (e) => {
@@ -933,9 +1037,15 @@ $("surprise").addEventListener("click", async () => {
       .then((d) => d.meals?.[0])
       .catch(() => null);
     if (meal) openRecipe(toResult(meal));
+    else statusEl.textContent = "The recipe box is busy. Give it a few seconds and try again.";
     return;
   }
-  if (!lastResults.length) await cook();
+  // Results must match the list as it is now, not as it was before the last change.
+  if (rerun || cookBtn.disabled || !lastResults.length) {
+    clearTimeout(rerun);
+    rerun = null;
+    await cook();
+  }
   const pool = lastResults.slice(0, 6);
   if (pool.length) openRecipe(pool[Math.floor(Math.random() * pool.length)]);
 });

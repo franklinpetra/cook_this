@@ -1,6 +1,7 @@
 // POST /api/kroger/cart: finds each missing ingredient at Kroger and adds the best match to the shopper's cart.
 // Answers { signIn: true } when the shopper needs to sign in first.
 
+import { sameSite } from "../_guard.js";
 import { API, BANNER, forgetTokens, krogerReady, readTokens, saveTokens, token } from "../_kroger.js";
 
 const CARTS = { qfc: "https://www.qfc.com/cart", fredmeyer: "https://www.fredmeyer.com/cart", ralphs: "https://www.ralphs.com/cart" };
@@ -33,7 +34,7 @@ async function shopperToken(req, res) {
   if (!t.refresh) return null;
   try {
     const fresh = await token({ grant_type: "refresh_token", refresh_token: t.refresh });
-    saveTokens(res, fresh);
+    saveTokens(res, fresh, t.refresh);
     return fresh.access_token;
   } catch {
     forgetTokens(res);
@@ -44,6 +45,7 @@ async function shopperToken(req, res) {
 export default async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");
   if (req.method !== "POST") return res.status(405).json({ error: "Use POST." });
+  if (!sameSite(req)) return res.status(403).json({ error: "Not allowed from this site." });
   if (!krogerReady()) return res.status(503).json({ error: "The Kroger cart isn't set up yet." });
 
   const names = (Array.isArray(req.body?.items) ? req.body.items : [])
