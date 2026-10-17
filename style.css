@@ -64,6 +64,7 @@ body {
 }
 
 .page {
+  position: relative;
   width: 100%;
   max-width: 1080px;
   margin: 0 auto;
@@ -919,21 +920,6 @@ a:focus-visible {
   }
 }
 
-/* The invitation to use a photo, just under the search box. */
-.photo-hint {
-  margin: 16px 0 0;
-  text-align: center;
-  font-family: var(--serif);
-  font-style: italic;
-  font-size: 0.97rem;
-  color: var(--ink-soft);
-  text-wrap: balance;
-}
-.photo-hint .photo-link {
-  font-family: var(--sans);
-  font-style: normal;
-  font-size: 0.86rem;
-}
 .clear-all {
   position: absolute;
   top: -11px;
@@ -952,32 +938,6 @@ a:focus-visible {
 .clear-all:focus-visible {
   color: var(--amber);
   border-color: var(--amber);
-}
-
-.photo-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font: inherit;
-  font-weight: 600;
-  color: var(--accent);
-  background: none;
-  border: 0;
-  padding: 2px 2px;
-  cursor: pointer;
-  text-decoration: underline;
-  text-decoration-color: color-mix(in srgb, var(--accent) 35%, transparent);
-  text-underline-offset: 4px;
-  vertical-align: baseline;
-}
-
-.photo-link svg {
-  align-self: center;
-}
-
-.photo-link:hover {
-  color: var(--accent-deep);
-  text-decoration-color: currentColor;
 }
 
 /* Get what's missing ----------------------------------------------------- */
@@ -1280,5 +1240,171 @@ a:focus-visible {
   .buy-note,
   .notice {
     display: none !important;
+  }
+}
+
+/* Design refresh ------------------------------------------------------------ */
+
+/* Saved recipes, one tap away at the top right. */
+.saved-link {
+  position: absolute;
+  top: 20px;
+  right: 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.86rem;
+  color: var(--ink-soft);
+  text-decoration: none;
+  padding: 6px 12px;
+  border-radius: 999px;
+  transition: color 0.15s, background 0.15s;
+}
+.saved-link:hover {
+  color: var(--accent);
+  background: var(--surface);
+}
+.saved-link span {
+  color: var(--muted);
+}
+
+/* "What ingredients do you have?" above the box. */
+.box-label {
+  display: block;
+  text-align: center;
+  font-family: var(--serif);
+  font-size: 1.12rem;
+  color: var(--ink);
+  margin: 0 0 12px;
+}
+
+/* The invitation to use a photo: a clear button, not a link to hunt for. */
+.photo-hint {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 12px;
+  margin: 18px 0 0;
+}
+.photo-ask {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 0.97rem;
+  color: var(--ink-soft);
+}
+.photo-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 30rem;
+  padding: 10px 20px 10px 16px;
+  border: 1.5px solid var(--ink);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.9rem;
+  line-height: 1.35;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, box-shadow 0.2s, transform 0.2s;
+}
+.photo-pill svg {
+  flex: none;
+}
+.photo-pill b {
+  font-weight: 600;
+}
+.photo-pill:hover {
+  border-color: var(--accent);
+  color: var(--accent-deep);
+  box-shadow: var(--shadow);
+}
+.photo-pill:active {
+  transform: scale(0.98);
+}
+
+/* Vegetarian and Surprise me. */
+.prefs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin: 10px 0 0;
+}
+.pref {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: inherit;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  background: transparent;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  padding: 5px 14px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+.pref:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.pref[aria-pressed="true"] {
+  color: var(--sage-deep);
+  background: var(--sage-tint);
+  border-color: var(--sage);
+}
+
+.cook span {
+  display: inline-block;
+  margin-left: 6px;
+  transition: transform 0.2s;
+}
+.cook:hover span {
+  transform: translateX(3px);
+}
+
+/* Recipes you can make right now get a quiet glow. */
+.card.is-ready img {
+  box-shadow: 0 0 0 3px var(--sage-tint), 0 0 0 4px var(--sage), var(--shadow);
+}
+
+/* "You already have 5 of the 9 ingredients." */
+.have-line {
+  margin: -4px 0 10px;
+  font-family: var(--serif);
+  font-style: italic;
+  color: var(--sage-deep);
+}
+
+@media (max-width: 560px) {
+  .saved-link {
+    top: 10px;
+    right: 8px;
+  }
+  /* On phones the photo is the quickest way in, so it's the biggest thing after the box. */
+  .photo-ask {
+    display: none;
+  }
+  .photo-pill {
+    width: 100%;
+    max-width: none;
+    padding: 14px 18px;
+    font-size: 0.95rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cook span,
+  .photo-pill {
+    transition: none;
+  }
+}
+
+@media print {
+  .have-line {
+    display: none;
   }
 }

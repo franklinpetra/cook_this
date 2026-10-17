@@ -39,6 +39,11 @@ let allIngredients = [];
 let pantry = load();
 let active = -1;
 let lastResults = [];
+// Only vegetarian (and vegan) recipes, when that's switched on.
+let vegOnly = false;
+let vegIds = null;
+let rerun = null;
+let searchId = 0; // Only the newest search gets to show its results.
 // Optional buy buttons, switched on server-side (api/config.js): { instacart: true, kroger: "QFC" }.
 let services = {};
 let shown = null; // the recipe open in the dialog
@@ -73,6 +78,24 @@ async function getJSON(path) {
   return res.json();
 }
 
+// Answers already fetched this visit. Recipes and ingredient lists don't change minute to minute, and
+// TheMealDB starts refusing requests when searches come quickly (say, while someone adds items one by one).
+const fetched = new Map();
+
+/** getJSON, remembering successful answers; a failed request is forgotten so it can be tried again. */
+function cachedJSON(path) {
+  if (!fetched.has(path)) {
+    fetched.set(
+      path,
+      getJSON(path).catch((err) => {
+        fetched.delete(path);
+        throw err;
+      }),
+    );
+  }
+  return fetched.get(path);
+}
+
 /** Does a recipe ingredient name count as one of yours? "Garlic" covers "Garlic Clove", not "Garlic Powder". */
 function covers(mine, theirs) {
   const a = words(mine).map(singular);
@@ -98,6 +121,11 @@ function renderChips() {
     .join("");
   input.placeholder = pantry.length ? "Add another…" : "Add an ingredient — chicken, rice, lemon…";
   $("clear-all").hidden = pantry.length < 2;
+  // Once recipes are showing, they follow the list as it changes.
+  if (lastResults.length) {
+    clearTimeout(rerun);
+    rerun = setTimeout(cook, 700);
+  }
   // The footer's NYT Cooking link searches for what's on the list, for people who subscribe.
   $("nyt").href = pantry.length ? `https://cooking.nytimes.com/search?q=${encodeURIComponent(pantry.join(" "))}` : "https://cooking.nytimes.com/";
   renderSamples();
@@ -297,7 +325,8 @@ function move(delta) {
 /** The recipe ids that use one of your ingredients, including close variants ("Chicken Thighs"). */
 async function mealsFor(name) {
   const variants = [name, ...allIngredients.filter((n) => n !== name && covers(name, n)).slice(0, 5)];
-  const lists = await Promise.all(variants.map((v) => getJSON(`filter.php?i=${encodeURIComponent(v)}`).catch(() => ({ meals: null }))));
+  const lists = await Promise.all(variants.map((v) => cachedJSON(`filter.php?i=${encodeURIComponent(v)}`).catch(() => ({ meals: null, failed: true }))));
+  if (lists.every((l) => l.failed)) throw new Error(`No answer for ${name}`);
   const meals = new Map();
   for (const list of lists) for (const m of list.meals ?? []) meals.set(m.idMeal, m);
   return meals;
@@ -328,10 +357,13 @@ function toResult(meal) {
 
 async function cook() {
   if (!pantry.length) {
+    lastResults = [];
+    resultsEl.innerHTML = "";
     statusEl.textContent = "Add at least one thing from your kitchen first.";
     input.focus();
     return;
   }
+  const id = ++searchId;
   cookBtn.disabled = true;
   track("search", { have: pantry });
   resultsEl.innerHTML = "";
@@ -347,29 +379,48 @@ async function cook() {
         tally.set(id, t);
       }
     });
-    const candidates = [...tally.values()].sort((a, b) => b.hits - a.hits).slice(0, DETAILS_TO_FETCH);
+    const allowed = vegOnly ? await vegetarianIds() : null;
+    if (id !== searchId) return;
+    const candidates = [...tally.values()]
+      .filter((t) => !allowed || allowed.has(t.meal.idMeal))
+      .sort((a, b) => b.hits - a.hits)
+      .slice(0, DETAILS_TO_FETCH);
     if (!candidates.length) {
+      lastResults = [];
       statusEl.textContent = "";
-      resultsEl.innerHTML = `<p class="empty">Nothing yet with that combination. Try removing one ingredient, or add a staple like rice or eggs.</p>`;
+      resultsEl.innerHTML = vegOnly
+        ? `<p class="empty">No vegetarian recipes use those yet. Try another ingredient, or turn off Vegetarian.</p>`
+        : `<p class="empty">Nothing yet with that combination. Try removing one ingredient, or add a staple like rice or eggs.</p>`;
       return;
     }
 
     // Full recipes, so we can show what you'd still need.
     const details = await Promise.all(
       candidates.map((c) =>
-        getJSON(`lookup.php?i=${c.meal.idMeal}`)
+        cachedJSON(`lookup.php?i=${c.meal.idMeal}`)
           .then((d) => d.meals?.[0])
           .catch(() => null),
       ),
     );
+    if (id !== searchId) return;
+    if (!details.some(Boolean)) throw new Error("No recipe details came back");
     lastResults = details.filter(Boolean).map(toResult).sort(byCookable);
     render();
   } catch (err) {
-    statusEl.textContent = "The recipe box is stuck. Check your connection and try again.";
+    if (id !== searchId) return;
+    statusEl.textContent = "The recipe box is busy. Give it a few seconds and try again.";
     console.error(err);
   } finally {
-    cookBtn.disabled = false;
+    if (id === searchId) cookBtn.disabled = false;
   }
+}
+
+/** The ids of TheMealDB's vegetarian and vegan recipes, looked up once. */
+function vegetarianIds() {
+  vegIds ??= Promise.all(["Vegetarian", "Vegan"].map((c) => cachedJSON(`filter.php?c=${c}`).catch(() => ({ meals: [] })))).then(
+    (lists) => new Set(lists.flatMap((l) => (l.meals ?? []).map((m) => m.idMeal))),
+  );
+  return vegIds;
 }
 
 function render() {
@@ -383,7 +434,7 @@ function render() {
       const need = r.need.length
         ? `<span class="badge need" title="${escapeHtml(r.need.map((n) => n.name).join(", "))}">${r.need.length} to buy</span>`
         : `<span class="badge ready">Ready to cook</span>`;
-      return `<button type="button" class="card" data-open="${i}" style="animation-delay:${Math.min(i, 10) * 40}ms">
+      return `<button type="button" class="card${r.need.length ? "" : " is-ready"}" data-open="${i}" style="animation-delay:${Math.min(i, 10) * 40}ms">
         <img src="${m.strMealThumb}/medium" alt="" loading="lazy" />
         <span class="card-body">
           <span class="card-title">${escapeHtml(m.strMeal)}</span>
@@ -450,6 +501,14 @@ function buyButtons() {
   <p class="buy-note" id="buy-note" role="status" aria-live="polite"></p>`;
 }
 
+/** "You already have 5 of the 9 ingredients." A small celebration of what's already in the kitchen. */
+function haveLine(r) {
+  const total = r.ings.length;
+  const have = r.ings.filter((i) => i.status !== "need").length;
+  if (!r.need.length) return "You have everything for this one. Let's cook!";
+  return `You already have ${have} of the ${total} ingredients.`;
+}
+
 function openRecipe(r) {
   const m = r.meal;
   shown = r;
@@ -463,6 +522,7 @@ function openRecipe(r) {
     <div class="recipe-body">
       <p class="meta">${escapeHtml([m.strArea, m.strCategory].filter(Boolean).join(" · "))}</p>
       <h2 id="recipe-title">${escapeHtml(m.strMeal)}</h2>
+      <p class="have-line">${haveLine(r)}</p>
       <p class="save-row">${saveButton(m.idMeal)}</p>
       ${shopPanel(r.need)}
       <h3>Ingredients</h3>
@@ -790,6 +850,8 @@ function renderSaved() {
   const email = syncedEmail();
   savedEl.hidden = !list.length && !email;
   $("saved-count").textContent = list.length ? `(${list.length})` : "";
+  $("saved-link").hidden = !list.length;
+  $("saved-link-count").textContent = list.length ? `(${list.length})` : "";
   savedListEl.innerHTML = list.length
     ? list
         .map(
@@ -848,6 +910,35 @@ savedEl.addEventListener("submit", async (e) => {
 });
 
 onSavedChange(renderSaved);
+
+$("saved-link").addEventListener("click", (e) => {
+  e.preventDefault();
+  savedEl.querySelector("details").open = true;
+  savedEl.scrollIntoView({ behavior: "smooth", block: "start" });
+});
+
+$("veg").addEventListener("click", (e) => {
+  vegOnly = !vegOnly;
+  e.currentTarget.setAttribute("aria-pressed", String(vegOnly));
+  if (vegOnly) track("veg");
+  if (lastResults.length || resultsEl.querySelector(".empty")) cook();
+});
+
+/** Opens one good match at random, or any recipe at all when the list is empty. */
+$("surprise").addEventListener("click", async () => {
+  track("surprise");
+  if (input.value.trim()) add(input.value);
+  if (!pantry.length) {
+    const meal = await getJSON("random.php")
+      .then((d) => d.meals?.[0])
+      .catch(() => null);
+    if (meal) openRecipe(toResult(meal));
+    return;
+  }
+  if (!lastResults.length) await cook();
+  const pool = lastResults.slice(0, 6);
+  if (pool.length) openRecipe(pool[Math.floor(Math.random() * pool.length)]);
+});
 
 renderChips();
 renderSaved();

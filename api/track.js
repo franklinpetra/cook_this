@@ -6,7 +6,7 @@
 
 import { redis, redisReady } from "./_redis.js";
 
-const EVENTS = new Set(["visit", "search", "scan", "open", "shop", "copy", "save", "print", "video", "nyt", "instacart", "kroger"]);
+const EVENTS = new Set(["visit", "search", "scan", "open", "shop", "copy", "save", "print", "video", "nyt", "instacart", "kroger", "veg", "surprise"]);
 const KEEP_DAYS = 400;
 const PER_VISITOR_PER_DAY = 400;
 
