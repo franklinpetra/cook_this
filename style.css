@@ -18,7 +18,7 @@
   --glow: #cfe6ea; /* the soft light behind the title */
   --bg-top: #e7f1f3;
   --image-wait: #dbe8eb; /* behind recipe photos while they load */
-  --maker: #d9620f; /* Tandem Works orange in the footer */
+  --maker: #d9620f; /* Tandem Works orange, top right */
   --serif: "Fraunces", Georgia, "Times New Roman", serif;
   --sans: "Inter", system-ui, -apple-system, sans-serif;
   --radius: 14px;
@@ -647,35 +647,25 @@ a:focus-visible {
   color: var(--accent);
 }
 
-.footer {
-  width: 100%;
-  max-width: 1080px;
-  margin: 48px auto 0;
-  padding: 24px 16px 32px;
-}
-.footer .maker {
+/* The maker's mark, top right. */
+.maker {
   flex: none;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 3px;
-  font-size: 0.62rem;
+  font-size: 0.64rem;
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--maker);
   text-decoration: none;
 }
-.footer .maker img {
-  width: 24px;
+.maker img {
+  width: 32px;
   height: auto;
 }
 
-.footer a {
-  color: var(--ink-soft);
-  text-decoration-color: var(--line-strong);
-  text-underline-offset: 3px;
-}
 
 @media (max-width: 560px) {
   .page {
@@ -1373,13 +1363,19 @@ a:focus-visible {
 
 
 /* Header links: How it works, Where your data goes, Saved ---------------------- */
+.topbar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 18px;
+  margin: -48px 0 24px;
+}
 .topnav {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
   align-items: center;
   gap: 4px 6px;
-  margin: -40px 0 28px;
 }
 .topnav-link {
   font: inherit;
@@ -1463,9 +1459,13 @@ a:focus-visible {
 }
 
 @media (max-width: 560px) {
+  .topbar {
+    justify-content: space-between;
+    gap: 10px;
+    margin: -40px -6px 18px;
+  }
   .topnav {
     justify-content: flex-start;
-    margin: -32px -10px 20px;
   }
   .topnav-link,
   .saved-link {
@@ -1477,7 +1477,7 @@ a:focus-visible {
 }
 
 @media print {
-  .topnav {
+  .topbar {
     display: none;
   }
 }

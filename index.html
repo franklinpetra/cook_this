@@ -22,14 +22,21 @@
   </head>
   <body>
     <main class="page">
-      <nav class="topnav" aria-label="About Cook This">
-        <button type="button" class="topnav-link" data-panel="how">How it works</button>
-        <button type="button" class="topnav-link" data-panel="data">Where your data goes</button>
-        <button type="button" class="saved-link" id="saved-link" data-panel="saved" hidden><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>Saved <span id="saved-link-count"></span></button>
-      </nav>
+      <div class="topbar">
+        <nav class="topnav" aria-label="About Cook This">
+          <button type="button" class="topnav-link" data-panel="how">How it works</button>
+          <button type="button" class="topnav-link" data-panel="data">Where your data goes</button>
+          <button type="button" class="saved-link" id="saved-link" data-panel="saved" hidden><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>Saved <span id="saved-link-count"></span></button>
+        </nav>
+        <!-- The maker's mark. A white-label version removes this one element. -->
+        <span class="maker">
+          <img src="icons/tandem-works.png" alt="" width="32" height="43" />
+          <span>Tandem Works</span>
+        </span>
+      </div>
       <header class="masthead">
         <h1 class="title">Cook This</h1>
-        <p class="lede">Let's make something delicious with what's already in your kitchen.</p>
+        <p class="lede">Let's make something delicious with what's <em>already</em> in your kitchen.</p>
       </header>
 
       <form id="pantry-form" class="pantry" autocomplete="off">
@@ -56,6 +63,10 @@
           <ul id="suggestions" class="suggestions" role="listbox" hidden></ul>
         </div>
 
+        <div class="try" id="try">
+          <span class="try-label">Try:</span>
+        </div>
+
         <p class="photo-hint">
           <span class="photo-ask">No time to type?</span>
           <button type="button" class="photo-pill" id="photo-hint">
@@ -77,9 +88,7 @@
           </div>
         </section>
 
-        <div class="try" id="try">
-          <span class="try-label">Try:</span>
-        </div>
+
 
         <div class="controls">
           <div class="prefs">
@@ -133,12 +142,6 @@
       </ul>
     </dialog>
 
-    <footer class="footer">
-      <span class="maker">
-        <img src="icons/tandem-works.png" alt="" width="24" height="32" />
-        <span>Tandem Works</span>
-      </span>
-    </footer>
 
     <script src="app.js" type="module"></script>
   </body>

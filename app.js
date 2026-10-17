@@ -177,7 +177,7 @@ function renderChips() {
       cook();
     }, 700);
   }
-  // The footer's NYT Cooking link searches for what's on the list, for people who subscribe.
+  // The NYT Cooking link (in How it works) searches for what's on the list, for people who subscribe.
   $("nyt").href = pantry.length ? `https://cooking.nytimes.com/search?q=${encodeURIComponent(pantry.join(" "))}` : "https://cooking.nytimes.com/";
   renderSamples();
 }
