@@ -4,15 +4,25 @@
 
 **Live:** [cookthis.link](https://cookthis.link)
 
+## What makes it good
+
+- **Type it however it comes out.** Rattle off "turkey edamame heavy cream tofu" with no commas and no Return key, and Cook This splits it into four ingredients. It knows "heavy cream" and "cherry tomatoes" are one thing each, keeps "fresh thyme" and "curry paste" together, and keeps foods it has never heard of instead of dropping them.
+- **Forgives typos.** "brocoli tumeric chiken" becomes Broccoli, Turmeric, Chicken.
+- **Speaks American.** Zucchini, cilantro, shrimp, heavy cream, and ground beef all find the British-named recipes in TheMealDB.
+- **Honest about what you have.** Butter isn't peanut butter, rice isn't rice vinegar, and black pepper isn't a bell pepper, so "Ready to cook" means ready to cook. Lemons do count as lemon juice.
+- **Or just take a picture** of your fridge and let AI list what's in it.
+- **NYT Cooking subscribers** can send the same ingredient list to a New York Times Cooking search with one tap from the bottom of the page.
+
 ## Using it
-1. **Add what you have.** Type a few ingredients (chicken, rice, lemon…) and pick from the suggestions, or tap one of the "Try" ideas. A whole list works too: "limes, chicken, cheese, bread" or just "limes chicken cheese bread" adds each one.
-1. **Add what you have.** Type a few ingredients (chicken, rice, lemon…) and pick from the suggestions, or tap one of the "Try" ideas.
-2. **Or snap a photo.** Tap **Photo** in the box, or **Snap a photo** just below it, then take or choose a picture of your fridge, pantry, or cupboard. Cook This lists the food it spots; untick anything it got wrong and tap **Add these**. Multiple photos used one by one can be used to truly get your kitchens inventory in the search.
+
+1. **Add what you have.** Type a few ingredients (chicken, rice, lemon…) and pick from the suggestions, or tap one of the "Try" ideas. A whole list works too: "limes, chicken, cheese, bread" or just "turkey edamame heavy cream tofu" adds each one, and small typos like "brocoli" are fixed. The list holds up to 15 ingredients.
+2. **Or snap a photo.** Tap **Photo** in the box, or **Snap a photo** just below it, then take or choose a picture of your fridge, pantry, or cupboard. Cook This lists the food it spots; untick anything it got wrong and tap **Add these**. Multiple photos used one by one can be used to truly get your kitchen's inventory in the search.
 3. **Tap Find recipes.** Recipes are ranked by how close you are to cooking them: how many of your ingredients each one uses, and how few you'd need to buy.
 4. **Open a recipe** to see what you have (✓), the basics you have (•), and what you'd need (+), with numbered steps and a video when there is one.
 5. **Get what's missing.** Each thing you'd need links to a search for it at Instacart, Amazon Fresh, QFC, and Safeway, and **Copy list** copies them all for your own shopping app.
 6. **Save** recipes you like with the **Save** button under the recipe's name. They appear under **Your saved recipes**, with no account needed. To see them on another device too, enter your email there and open the sign-in link it sends.
 7. **Print** a clean copy of the recipe: just the photo, ingredients, and steps.
+8. **Subscribe to NYT Cooking?** The link at the bottom of the page searches New York Times Cooking for the ingredients on your list.
 
 Untick "I have the basics" (salt, pepper, oil, butter, flour, sugar, water) to count those as missing too.
 
@@ -28,6 +38,8 @@ Untick "I have the basics" (salt, pepper, oil, butter, flour, sugar, water) to c
 A plain HTML, CSS, and JavaScript site with no build step, plus one small serverless function, hosted on Vercel.
 
 - **Recipes** come from the free [TheMealDB](https://www.themealdb.com) API. Cook This looks up recipes for each ingredient (including close variants, so "Chicken" also finds "Chicken Thighs"), tallies the overlap, then loads the top matches to compare their ingredient lists with yours. American names are translated to TheMealDB's British ones, so "zucchini" finds recipes listed under "Courgettes".
+- **Reading a typed list:** commas, new lines, and "and" split items; without them, Cook This finds the longest known ingredient name at each word, attaches describing words ("fresh", "frozen") and form words ("paste", "leaves") to their neighbour, corrects near-miss spellings of known ingredients, and keeps anything else as its own item.
+- **Matching:** your "Chicken" covers a recipe's "Chicken Thighs", but words that make something a different food ("stock", "peanut", "vinegar", "ice", "condensed"…) don't count, so a recipe only says "Ready to cook" when it is.
 - **Photo scanning** (`api/scan.js`) sends the photo to a vision model (Gemini Flash) through [OpenRouter](https://openrouter.ai) and returns the ingredients it sees. To keep costs in check, each visitor gets 15 scans a day, each server instance has a daily ceiling, and the OpenRouter key has its own spending cap.
 - **Design:** a heavy Inter title, Fraunces for recipe names, Inter text, an ocean palette of sea mist, deep water, and teal, and motion that holds still for anyone who has reduced motion turned on.
 

@@ -9,8 +9,17 @@ const DETAILS_TO_FETCH = 16;
 const STORE_KEY = "cook-this-pantry";
 const MAX_PANTRY = 15;
 
-// Words that make an ingredient a different thing ("Chicken Stock" isn't chicken).
-const NOT_THE_SAME = ["spring", "stock", "powder", "sauce", "paste", "oil", "juice", "extract", "seasoning", "cube", "gravy"];
+// Words that make an ingredient a different thing ("Chicken Stock" isn't chicken, "Peanut Butter" isn't butter).
+const NOT_THE_SAME = [
+  "spring", "stock", "powder", "sauce", "paste", "oil", "juice", "extract", "seasoning", "cube", "gravy",
+  "peanut", "almond", "coconut", "soy", "oat", "ice", "vinegar", "wine", "noodle", "flour", "flake", "milk",
+  "cream", "bread", "tortilla", "syrup", "bean", "condensed", "evaporated", "soya", "chocolate", "vermicelli",
+  "krispy", "paper", "ketchup", "puree", "sun", "salt", "liver", "palm",
+];
+// Pepper the spice only covers other pepper spices, not "Red Pepper" (a bell pepper) or "Chilli Pepper".
+const PEPPER_SPICE = ["black", "white", "ground", "cracked", "freshly", "pepper"];
+// Fresh citrus gives you its own juice.
+const SQUEEZABLE = ["lemon", "lime"];
 
 // Where "Get what's missing" sends people. An affiliate tag, once Petra has one, goes here;
 // when any tag is set, the recipe view shows the required disclosure.
@@ -77,7 +86,10 @@ function covers(mine, theirs) {
   const a = words(mine).map(singular);
   const b = words(theirs).map(singular);
   if (!a.every((w) => b.includes(w))) return false;
-  return !b.some((w) => NOT_THE_SAME.includes(w) && !a.includes(w));
+  const extra = b.filter((w) => !a.includes(w));
+  if (a.length === 1 && a[0] === "pepper") return extra.every((w) => PEPPER_SPICE.includes(w));
+  if (a.length === 1 && SQUEEZABLE.includes(a[0]) && extra.length === 1 && extra[0] === "juice") return true;
+  return !extra.some((w) => NOT_THE_SAME.includes(w));
 }
 
 const STAPLE = /^(salt|sea salt|table salt|water|sugar|caster sugar|granulated sugar|brown sugar|butter|unsalted butter|flour|plain flour|all purpose flour|pepper|black pepper|white pepper|ground pepper|olive oil|vegetable oil|oil|sunflower oil|canola oil|extra virgin olive oil|salt and pepper)$/;
@@ -94,6 +106,8 @@ function renderChips() {
     .join("");
   input.placeholder = pantry.length ? "Add another…" : "Add an ingredient — chicken, rice, lemon…";
   $("clear-all").hidden = pantry.length < 2;
+  // The footer's NYT Cooking link searches for what's on the list, for people who subscribe.
+  $("nyt").href = pantry.length ? `https://cooking.nytimes.com/search?q=${encodeURIComponent(pantry.join(" "))}` : "https://cooking.nytimes.com/";
   renderSamples();
 }
 
@@ -122,8 +136,9 @@ function canonical(text) {
   if (SAME_AS[t]) return SAME_AS[t];
   const exact = allIngredients.find((n) => norm(n) === t || singular(norm(n)) === singular(t));
   if (exact) return exact;
-  const starts = allIngredients.find((n) => norm(n).startsWith(t));
-  if (starts) return starts;
+  // Only when it's unambiguous: "corn" could be Cornflour or Corn Tortillas, so it stays "Corn".
+  const starts = allIngredients.filter((n) => norm(n).startsWith(t));
+  if (starts.length === 1) return starts[0];
   // "Baby Carrots" → "Carrots": the longest known name whose words are all in what was typed.
   const typed = words(t).map(singular);
   const inside = allIngredients
@@ -144,27 +159,67 @@ function known(text) {
 const SEPARATORS = /\s*[,;\n\/]\s*/;
 const JOINERS = /\s*(?:[&+]|\band\b|\bplus\b)\s*/i;
 
+// Words that describe the next item ("fresh limes"), and words that finish the one before ("curry paste").
+const DESCRIBES = new Set(
+  "fresh frozen dried canned tinned raw cooked leftover ripe baby large small big organic chopped sliced diced minced grated shredded smoked boneless skinless whole lean extra virgin".split(" "),
+);
+const FORMS = new Set("paste sauce powder leaves leaf seeds flakes stock broth oil juice zest puree cubes fillets fillet breasts breast thighs wings mince".split(" "));
+
+/** Letters you'd have to change to turn one word into another. */
+function distance(a, b) {
+  let prev = Array.from({ length: b.length + 1 }, (_, j) => j);
+  for (let i = 1; i <= a.length; i++) {
+    const row = [i];
+    for (let j = 1; j <= b.length; j++) row[j] = Math.min(prev[j] + 1, row[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    prev = row;
+  }
+  return prev[b.length];
+}
+
+/** A known one-word ingredient this is a likely typo of ("brocoli" → "Broccoli"), or null. */
+function corrected(word) {
+  const w = singular(norm(word));
+  if (w.length < 5) return null;
+  const allowed = w.length >= 8 ? 2 : 1;
+  let best = null;
+  let bestD = allowed + 1;
+  for (const n of [...allIngredients, ...Object.keys(SAME_AS)]) {
+    if (n.includes(" ")) continue;
+    const d = distance(w, singular(norm(n)));
+    if (d < bestD) [best, bestD] = [n, d];
+  }
+  return best;
+}
+
 /**
  * Turns whatever was typed into separate ingredients: "limes, chicken, cheese, bread" or
- * "limes chicken cheese bread" both become four. Known multi-word names ("olive oil") stay whole.
+ * "turkey edamame heavy cream tofu" both work. Known multi-word names ("olive oil") stay whole, and a
+ * word we don't recognise becomes its own item rather than being lost.
  */
 function splitIngredients(text) {
   const parts = text.split(SEPARATORS).flatMap((part) => (known(part) ? [part] : part.split(JOINERS)));
   return parts.flatMap((part) => {
     const w = part.split(/\s+/).filter(Boolean);
     if (w.length < 2 || known(part)) return w.length ? [part.trim()] : [];
-    // Longest known name at each position, up to three words; unknown words lead into the next item ("fresh limes").
+    // Longest known name at each position, up to three words.
     const found = [];
     let lead = [];
     for (let i = 0; i < w.length; ) {
       let len = Math.min(3, w.length - i);
       while (len > 0 && !known(w.slice(i, i + len).join(" "))) len--;
+      const word = w[i];
       if (len) {
         found.push([...lead, ...w.slice(i, i + len)].join(" "));
         lead = [];
         i += len;
-      } else {
-        lead.push(w[i++]);
+        continue;
+      }
+      i++;
+      if (DESCRIBES.has(norm(word))) lead.push(word);
+      else if (FORMS.has(norm(word)) && found.length && !lead.length) found[found.length - 1] += ` ${word}`;
+      else {
+        found.push([...lead, corrected(word) ?? word].join(" "));
+        lead = [];
       }
     }
     if (found.length < 2) return [part.trim()];
@@ -175,17 +230,22 @@ function splitIngredients(text) {
 
 function add(text) {
   let changed = false;
+  let full = false;
   for (const item of splitIngredients(text)) {
     const name = canonical(item);
-    if (name && !pantry.some((p) => norm(p) === norm(name)) && pantry.length < MAX_PANTRY) {
-      pantry.push(name);
-      changed = true;
+    if (!name || pantry.some((p) => norm(p) === norm(name))) continue;
+    if (pantry.length >= MAX_PANTRY) {
+      full = true;
+      continue;
     }
+    pantry.push(name);
+    changed = true;
   }
   if (changed) {
     save();
     renderChips();
   }
+  if (full) statusEl.textContent = `Your list holds ${MAX_PANTRY} ingredients. Remove one to add another.`;
   input.value = "";
   hideSuggestions();
 }
