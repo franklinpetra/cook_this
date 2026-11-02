@@ -66,6 +66,7 @@ A plain HTML, CSS, and JavaScript site with no build step, plus one small server
 | `saved.js` | Saved recipes: kept in the browser, and synced through Supabase for people who sign in (sync settings are at the top) |
 | `supabase/schema.sql` | The saved-recipes table and the rules that keep each person's saves private |
 | `scan.js` | Shrinks a photo in the browser and sends it to the scanner |
+| `vendor/heic-to.js` | [heic-to](https://github.com/hoppergee/heic-to) 1.6.5 (LGPL-3.0, license beside it): turns iPhone HEIC photos into JPEG in browsers that can't open them; loaded only when needed |
 | `api/scan.js` | The serverless function that asks the vision model what food it sees |
 
 ## Publishing
@@ -112,4 +113,4 @@ Supabase's built-in email sender is limited to a few sign-in emails an hour. Bef
 
 ## Credits
 
-Recipe data and images: [TheMealDB](https://www.themealdb.com). Built by [Petra Franklin](https://github.com/franklinpetra).
+Recipe data and images: [TheMealDB](https://www.themealdb.com). HEIC photo support: [heic-to](https://github.com/hoppergee/heic-to), built on [libheif](https://github.com/strukturag/libheif). Built by [Petra Franklin](https://github.com/franklinpetra).
