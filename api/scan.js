@@ -85,8 +85,9 @@ export default async function handler(req, res) {
         "X-Title": "Cook This",
       },
       body: JSON.stringify({
+        // No temperature: with require_parameters, any setting a provider lacks rules that provider out,
+        // and the only no-data-retention provider left for this model (Google Vertex) doesn't take one.
         model: MODEL,
-        temperature: 0,
         max_tokens: 2000,
         reasoning: { effort: "low" },
         // Only providers that don't store or train on what they're sent.
