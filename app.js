@@ -704,14 +704,16 @@ async function scan(file) {
   $("scan-add").hidden = true;
   const img = $("scan-img");
   if (img.src) URL.revokeObjectURL(img.src);
-  img.src = URL.createObjectURL(file);
+  img.removeAttribute("src");
   setScan("Looking for ingredients…");
   track("scan");
   scanEl.classList.add("busy");
   scanEl.scrollIntoView({ behavior: scrollBehavior(), block: "nearest" });
   try {
-    const { scanPhoto } = await import("./scan.js");
-    const found = (await scanPhoto(file)).map((f) => ({ ...f, name: canonical(f.name) }));
+    const { readPhoto, scanPhoto } = await import("./scan.js");
+    const photo = await readPhoto(file);
+    img.src = URL.createObjectURL(photo);
+    const found = (await scanPhoto(photo)).map((f) => ({ ...f, name: canonical(f.name) }));
     const seen = new Set(pantry.map(norm));
     const fresh = found.filter((f) => !seen.has(norm(f.name)) && seen.add(norm(f.name)));
     if (!fresh.length) {
